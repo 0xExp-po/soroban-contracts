@@ -11,18 +11,14 @@ mod token {
     soroban_sdk::contractimport!(file = "../soroban_token_spec.wasm");
 }
 
+
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
     TokenId,
-    AdminId
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub enum Reward {
-    Thank(u32),
-    Congrat(u32)
+    AdminId,
+    ThankVal,
+    CongratVal,
 }
 
 #[derive(Clone)]
@@ -60,8 +56,9 @@ pub trait ReturnFundsContractTrait {
 
     fn get_tc_id(env: Env) -> BytesN<32>;
 
-    fn get_bal(env: Env) ->BigInt;
-
+    fn get_bal(env: Env) -> BigInt;
+    
+    // Add the initial balance to the contract
     fn fund_c(env: Env, approval_sign: Signature);
 }
 
@@ -90,8 +87,10 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         put_token_id(&env, &token_id);
 
         // Set Thanks amount reward
+        env.data().set(DataKey::ThankVal, BigInt::from_i32(&env, 35));
 
         // Set Congratz amount reward
+        env.data().set(DataKey::CongratVal, BigInt::from_i32(&env, 25));
 
         token_id
     }
@@ -99,18 +98,25 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
     fn add_k(env: Env, kommitter: Kommitter) {
         // Push a kommitter into the kommitters vector
     }
+    
     // Imply xfer_from
     fn remove_k(env: Env, from: Identifier) {
         // Remove kommitter from the kommitters vector
         // Bring back it's MKT's to the contract balance
         let tc_id = get_token_contract_id(&env);
-        let client = token::Client::new(&env, tc_id);
+        let client = token::Client::new(&env, &tc_id);
 
         let admin_id = get_admin_id(&env);
 
         let kommitter_balance = client.balance(&from);
 
-        client.xfer_from(&Signature::Invoker, &BigInt::zero(&env), &from, &admin_id, &kommitter_balance);
+        client.xfer_from(
+            &Signature::Invoker, 
+            &BigInt::zero(&env), 
+            &from, 
+            &Identifier::Contract(env.get_current_contract()), 
+            &kommitter_balance
+        );
     }
 
     // Imply xfer
@@ -151,6 +157,17 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         let nonce = token_client.nonce(&admin_id);
         token_client.mint(&approval_sign, &nonce, &admin_id, &BigInt::from_u32(&env, 10000));
     }
+}
+
+// REWARDS
+fn get_thank_value(env: &Env) -> BigInt {
+    let key = DataKey::ThankVal;
+    env.data().get(key).unwrap().unwrap()
+}
+
+fn get_congrat_value(env: &Env) -> BigInt {
+    let key = DataKey::CongratVal;
+    env.data().get(key).unwrap().unwrap()
 }
 
 // ADMIN
