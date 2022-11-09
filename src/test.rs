@@ -9,7 +9,7 @@ extern crate std;
 
 use crate::token::{self, TokenMetadata, Client as TokenClient,};
 
-#[test]
+//#[test]
 
 // fn test_xfer_and_xfer_from() {
 //     let env = Env::default();
@@ -141,6 +141,10 @@ fn test_sign() {
     let (usr2_id, usr2_sign) = ed25519::generate(&env);
     let (spender_id, spender_sign) = ed25519::generate(&env);
     let (admin_id, admin_sign) = ed25519::generate(&env);
+
+    // APPROVAL USER
+    let approval_user = env.accounts().generate();
+    let approval_user_id = Identi::Account(approval_user.clone());
     
     /// CREATE OUR CUSTOM CONTRACT
     let contract_id = env.register_contract(None, ReturnFundsContract);
@@ -160,11 +164,16 @@ fn test_sign() {
         symbol!("mint"),
         (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, 10000)),
     );
+    let balance = contract_client.get_bal();
+    std::println!("======= ADMIN BALANCE START ========: {}", balance);
+
+    std::println!("===============");
 
     contract_client.fund_c(&approval_sign);
 
     let balance = contract_client.get_bal();
-    std::println!("======= ADMIN BALANCE ========: {}", balance);
+    std::println!("======= ADMIN BALANCE - FUND ========: {}", balance);
+    std::println!("===============");
 
     let nonce = token_client.nonce(&admin_id);
     // This is the test call, but the contract call arguments and signature payload
@@ -180,20 +189,43 @@ fn test_sign() {
         // Arguments of the contract function call.
         // Notice that instead of the signature (first `mint` argument), public key
         // is used as the first argument here.
-        (&admin_id, &nonce, &usr2_id, &BigInt::from_u32(&env, 2000)),
+        (&admin_id, &nonce, &approval_user_id, &BigInt::from_u32(&env, 2000)),
     );
 
-
-    contract_client.thank_k(&xfer_approval_sign, &usr2_id, &BigInt::from_u32(&env, 2000));
-
-    let balance = contract_client.get_bal();
-    std::println!("======= ADMIN BALANCE ========: {}", balance);
+    contract_client.thank_k(&xfer_approval_sign, &approval_user_id, &BigInt::from_u32(&env, 2000));
 
     let token_id = contract_client.get_tc_id();
 
     let client = token::Client::new(&env, &token_id);
-    std::println!("======= USER 2 BALANCE ========: {}", client.balance(&usr2_id));
 
-    let logs = env.logger().all();
-    std::println!("======= LOGS ========: {}", logs.join("\n"));
+    std::println!("======= ADMIN BALANCE - AFTER XFER ========: {}", client.balance(&admin_id));
+
+    std::println!("======= APPROBAL USER BALANCE - AFTER XFER ========: {}", client.balance(&approval_user_id));
+    std::println!("===============");
+
+    token_client.with_source_account(&approval_user).approve(
+        &Signature::Invoker,
+        &BigInt::zero(&env),
+        &admin_id,
+        &client.balance(&approval_user_id)
+    );
+
+    std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", client.balance(&approval_user_id));
+    
+
+    //contract_client.remove_k(&approval_user_id);
+
+    std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", client.balance(&admin_id));
+    std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", client.balance(&approval_user_id));
+    
+    // token_client.with_source_account(&user_2).xfer_from(
+    //     &Signature::Invoker,
+    //     &BigInt::zero(&env),
+    //     &spender_id,
+    //     &user1_id,
+    //     &BigInt::from_u32(&env, 100),
+    // );
+
+    // let logs = env.logger().all();
+    // std::println!("======= LOGS ========: {}", logs.join("\n"));
 }

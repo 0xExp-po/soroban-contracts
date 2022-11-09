@@ -50,7 +50,7 @@ pub trait ReturnFundsContractTrait {
     fn add_k(e: Env, kommitter: Kommitter);
 
     // Remove a kommitter from the contract and get backs its MTK balance
-    fn remove_k(e: Env, from: Identifier, kommitter: AccountId);
+    fn remove_k(e: Env, from: Identifier);
 
     // Send thanks to a kommitter
     fn thank_k(e: Env, token_approval_sig: Signature, to: Identifier, amount: BigInt);
@@ -100,9 +100,17 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         // Push a kommitter into the kommitters vector
     }
     // Imply xfer_from
-    fn remove_k(env: Env, from: Identifier, kommitter: AccountId) {
+    fn remove_k(env: Env, from: Identifier) {
         // Remove kommitter from the kommitters vector
         // Bring back it's MKT's to the contract balance
+        let tc_id = get_token_contract_id(&env);
+        let client = token::Client::new(&env, tc_id);
+
+        let admin_id = get_admin_id(&env);
+
+        let kommitter_balance = client.balance(&from);
+
+        client.xfer_from(&Signature::Invoker, &BigInt::zero(&env), &from, &admin_id, &kommitter_balance);
     }
 
     // Imply xfer
