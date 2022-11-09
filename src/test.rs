@@ -1,9 +1,9 @@
 #![cfg(test)]
 
-use super::{ReturnFundsContract, ReturnFundsContractClient, Identifier};
+use super::{ReturnFundsContract, ReturnFundsContractClient, Identifier as Identi};
 
 use soroban_sdk::{symbol, vec, Env, testutils::{Accounts, Logger}, BigInt, IntoVal};
-use soroban_auth::{Signature};
+use soroban_auth::{Signature, testutils::ed25519};
 
 extern crate std;
 
@@ -11,123 +11,189 @@ use crate::token::{self, TokenMetadata, Client as TokenClient,};
 
 #[test]
 
-fn test() {
+// fn test_xfer_and_xfer_from() {
+//     let env = Env::default();
+
+//     // USERS
+//     let user_1 = env.accounts().generate();
+//     let user_2 = env.accounts().generate();
+//     let spender = env.accounts().generate();
+//     let admin = env.accounts().generate();
+
+//     // IDENTIFIERS
+//     let user1_id = Identi::Account(user_1.clone());
+//     let user2_id = Identi::Account(user_2.clone());
+//     let spender_id = Identi::Account(spender.clone());
+//     let admin_id = Identi::Account(admin.clone());
+
+//     // CREATE TOKEN CONTRACT
+//     let token_id = env.register_contract_token(None);
+//     let token_client = TokenClient::new(&env, &token_id);
+//     let token_id_identifier = Identi::Contract(token_id.clone());
+
+//     token_client.init(
+//         &admin_id,
+//         &TokenMetadata {
+//             name: "Mitkoin".into_val(&env),
+//             symbol: "MTK".into_val(&env),
+//             decimals: 7,
+//         },
+//     );
+
+//     /// CREATE OUR CUSTOM CONTRACT
+//     let contract_id = env.register_contract(None, ReturnFundsContract);
+//     let contract_client = ReturnFundsContractClient::new(&env, &contract_id);
+//     contract_client.initialize(&admin, &token_id);
+
+//     token_client.with_source_account(&admin).mint(
+//         &Signature::Invoker, 
+//         &BigInt::zero(&env), 
+//         &admin_id, 
+//         &BigInt::from_u32(&env, 10000)
+//     );
+
+//     token_client.with_source_account(&admin).mint(
+//         &Signature::Invoker, 
+//         &BigInt::zero(&env), 
+//         &spender_id, 
+//         &BigInt::from_u32(&env, 5000)
+//     );
+
+//     let user1_balance = token_client.with_source_account(&admin).balance(&user1_id);
+//     std::println!("USER 1 BALANCE -> {:?}", user1_balance);
+
+//     let user2_balance = token_client.with_source_account(&admin).balance(&user2_id);
+//     std::println!("USER 2 BALANCE -> {:?}", user2_balance);
+
+//     let spender_balance = token_client.with_source_account(&admin).balance(&spender_id);
+//     std::println!("SPENDER BALANCE -> {:?}", spender_balance);
+
+//     let admin_balance = token_client.with_source_account(&admin).balance(&admin_id);
+//     std::println!("ADMIN BALANCE -> {:?}", admin_balance);
+
+//     let contract_balance = token_client.with_source_account(&admin).balance(&token_id_identifier);
+//     std::println!("CONTRACT BALANCE -> {:?}", admin_balance);
+//     std::println!("===========================");
+
+//     token_client.with_source_account(&admin).xfer(
+//         &Signature::Invoker, 
+//         &BigInt::zero(&env), 
+//         &user2_id, 
+//         &BigInt::from_u32(&env, 1000)
+//     );
+
+//     let user1_balance = token_client.with_source_account(&admin).balance(&user1_id);
+//     std::println!("USER 1 BALANCE -> {:?}", user1_balance);
+
+//     let user2_balance = token_client.with_source_account(&admin).balance(&user2_id);
+//     std::println!("USER 2 BALANCE -> {:?}", user2_balance);
+
+//     let spender_balance = token_client.with_source_account(&admin).balance(&spender_id);
+//     std::println!("SPENDER BALANCE -> {:?}", spender_balance);
+
+//     let admin_balance = token_client.with_source_account(&admin).balance(&admin_id);
+//     std::println!("ADMIN BALANCE -> {:?}", admin_balance);
+
+//     let contract_balance = token_client.with_source_account(&admin).balance(&token_id_identifier);
+//     std::println!("CONTRACT BALANCE -> {:?}", admin_balance);
+//     std::println!("===========================");
+
+//     token_client.with_source_account(&spender).approve(
+//         &Signature::Invoker,
+//         &BigInt::zero(&env),
+//         &user2_id,
+//         &BigInt::from_u32(&env, 100)
+//     );
+    
+//     token_client.with_source_account(&user_2).xfer_from(
+//         &Signature::Invoker,
+//         &BigInt::zero(&env),
+//         &spender_id,
+//         &user1_id,
+//         &BigInt::from_u32(&env, 100),
+//     );
+
+//     let user1_balance = token_client.with_source_account(&admin).balance(&user1_id);
+//     std::println!("USER 1 BALANCE -> {:?}", user1_balance);
+
+//     let user2_balance = token_client.with_source_account(&admin).balance(&user2_id);
+//     std::println!("USER 2 BALANCE -> {:?}", user2_balance);
+
+//     let spender_balance = token_client.with_source_account(&admin).balance(&spender_id);
+//     std::println!("SPENDER BALANCE -> {:?}", spender_balance);
+
+//     let admin_balance = token_client.with_source_account(&admin).balance(&admin_id);
+//     std::println!("ADMIN BALANCE -> {:?}", admin_balance);
+
+//     let contract_balance = token_client.with_source_account(&admin).balance(&token_id_identifier);
+//     std::println!("CONTRACT BALANCE -> {:?}", admin_balance);
+//     std::println!("===========================");
+    
+    
+// }
+
+#[test]
+fn test_sign() {
     let env = Env::default();
 
     // USERS
-    let user_1 = env.accounts().generate();
-    let user_2 = env.accounts().generate();
-    let spender = env.accounts().generate();
-    let admin = env.accounts().generate();
-
-    // IDENTIFIERS
-    let user1_id = Identifier::Account(user_1.clone());
-    let user2_id = Identifier::Account(user_2.clone());
-    let spender_id = Identifier::Account(spender.clone());
-    let admin_id = Identifier::Account(admin.clone());
-
-    // CREATE TOKEN CONTRACT
-    let token_id = env.register_contract_token(None);
-    let token_client = TokenClient::new(&env, &token_id);
-    let token_id_identifier = Identifier::Contract(token_id.clone());
-
-    token_client.init(
-        &Identifier::Account(admin.clone()),
-        &TokenMetadata {
-            name: "name".into_val(&env),
-            symbol: "symbol".into_val(&env),
-            decimals: 7,
-        },
-    );
-
+    let (usr1_id, usr1_sign) = ed25519::generate(&env);
+    let (usr2_id, usr2_sign) = ed25519::generate(&env);
+    let (spender_id, spender_sign) = ed25519::generate(&env);
+    let (admin_id, admin_sign) = ed25519::generate(&env);
+    
     /// CREATE OUR CUSTOM CONTRACT
     let contract_id = env.register_contract(None, ReturnFundsContract);
-    let charity_contract_client = ReturnFundsContractClient::new(&env, &contract_id);
-
-    token_client.with_source_account(&admin).mint(
-        &Signature::Invoker, 
-        &BigInt::zero(&env), 
-        &admin_id, 
-        &BigInt::from_u32(&env, 10000)
-    );
-
-    token_client.with_source_account(&admin).mint(
-        &Signature::Invoker, 
-        &BigInt::zero(&env), 
-        &spender_id, 
-        &BigInt::from_u32(&env, 5000)
-    );
-
-
-    let user1_balance = token_client.with_source_account(&admin).balance(&user1_id);
-    std::println!("USER 1 BALANCE -> {:?}", user1_balance);
-
-    let user2_balance = token_client.with_source_account(&admin).balance(&user2_id);
-    std::println!("USER 2 BALANCE -> {:?}", user2_balance);
-
-    let spender_balance = token_client.with_source_account(&admin).balance(&spender_id);
-    std::println!("SPENDER BALANCE -> {:?}", spender_balance);
-
-    let admin_balance = token_client.with_source_account(&admin).balance(&admin_id);
-    std::println!("ADMIN BALANCE -> {:?}", admin_balance);
-
-    let contract_balance = token_client.with_source_account(&admin).balance(&token_id_identifier);
-    std::println!("CONTRACT BALANCE -> {:?}", admin_balance);
-    std::println!("===========================");
-
-    token_client.with_source_account(&admin).xfer(
-        &Signature::Invoker, 
-        &BigInt::zero(&env), 
-        &user2_id, 
-        &BigInt::from_u32(&env, 1000)
-    );
-
-    let user1_balance = token_client.with_source_account(&admin).balance(&user1_id);
-    std::println!("USER 1 BALANCE -> {:?}", user1_balance);
-
-    let user2_balance = token_client.with_source_account(&admin).balance(&user2_id);
-    std::println!("USER 2 BALANCE -> {:?}", user2_balance);
-
-    let spender_balance = token_client.with_source_account(&admin).balance(&spender_id);
-    std::println!("SPENDER BALANCE -> {:?}", spender_balance);
-
-    let admin_balance = token_client.with_source_account(&admin).balance(&admin_id);
-    std::println!("ADMIN BALANCE -> {:?}", admin_balance);
-
-    let contract_balance = token_client.with_source_account(&admin).balance(&token_id_identifier);
-    std::println!("CONTRACT BALANCE -> {:?}", admin_balance);
-    std::println!("===========================");
-
-    token_client.with_source_account(&spender).approve(
-        &Signature::Invoker,
-        &BigInt::zero(&env),
-        &user2_id,
-        &BigInt::from_u32(&env, 100)
-    );
+    let contract_client = ReturnFundsContractClient::new(&env, &contract_id);
     
-    token_client.with_source_account(&user_2).xfer_from(
-        &Signature::Invoker,
-        &BigInt::zero(&env),
-        &spender_id,
-        &user1_id,
-        &BigInt::from_u32(&env, 100),
+    contract_client.initialize(&admin_id);
+
+    let token_contract_id = contract_client.get_tc_id();
+    let token_client = token::Client::new(&env, &token_contract_id);
+
+    let nonce = token_client.nonce(&admin_id);
+
+    let approval_sign = ed25519::sign(
+        &env,
+        &admin_sign,
+        &token_contract_id,
+        symbol!("mint"),
+        (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, 10000)),
     );
 
-    let user1_balance = token_client.with_source_account(&admin).balance(&user1_id);
-    std::println!("USER 1 BALANCE -> {:?}", user1_balance);
+    contract_client.fund_c(&approval_sign);
 
-    let user2_balance = token_client.with_source_account(&admin).balance(&user2_id);
-    std::println!("USER 2 BALANCE -> {:?}", user2_balance);
+    let balance = contract_client.get_bal();
+    std::println!("======= ADMIN BALANCE ========: {}", balance);
 
-    let spender_balance = token_client.with_source_account(&admin).balance(&spender_id);
-    std::println!("SPENDER BALANCE -> {:?}", spender_balance);
+    let nonce = token_client.nonce(&admin_id);
+    // This is the test call, but the contract call arguments and signature payload
+    // would be the same for the real contract call too.
+    let xfer_approval_sign = ed25519::sign(
+        &env,
+        // Signer has the private key of the admin.
+        &admin_sign,
+        // Identifier of the token contract.
+        &token_contract_id,
+        // Name of the contract function we call.
+        symbol!("xfer"),
+        // Arguments of the contract function call.
+        // Notice that instead of the signature (first `mint` argument), public key
+        // is used as the first argument here.
+        (&admin_id, &nonce, &usr2_id, &BigInt::from_u32(&env, 2000)),
+    );
 
-    let admin_balance = token_client.with_source_account(&admin).balance(&admin_id);
-    std::println!("ADMIN BALANCE -> {:?}", admin_balance);
 
-    let contract_balance = token_client.with_source_account(&admin).balance(&token_id_identifier);
-    std::println!("CONTRACT BALANCE -> {:?}", admin_balance);
-    std::println!("===========================");
-    
-    
+    contract_client.thank_k(&xfer_approval_sign, &usr2_id, &BigInt::from_u32(&env, 2000));
+
+    let balance = contract_client.get_bal();
+    std::println!("======= ADMIN BALANCE ========: {}", balance);
+
+    let token_id = contract_client.get_tc_id();
+
+    let client = token::Client::new(&env, &token_id);
+    std::println!("======= USER 2 BALANCE ========: {}", client.balance(&usr2_id));
+
+    let logs = env.logger().all();
+    std::println!("======= LOGS ========: {}", logs.join("\n"));
 }
