@@ -206,15 +206,14 @@ fn test_sign() {
     token_client.with_source_account(&approval_user).approve(
         &Signature::Invoker,
         &BigInt::zero(&env),
-        &admin_id,
+        &Identi::Contract(contract_id),
         &client.balance(&approval_user_id)
     );
 
     std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", client.balance(&approval_user_id));
+
+   contract_client.remove_k(&approval_user_id);
     
-
-    //contract_client.remove_k(&approval_user_id);
-
     std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", client.balance(&admin_id));
     std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", client.balance(&approval_user_id));
     
