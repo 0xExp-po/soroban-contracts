@@ -49,7 +49,7 @@ pub trait ReturnFundsContractTrait {
     fn remove_k(e: Env, from: Identifier);
 
     // Send thanks to a kommitter
-    fn thank_k(e: Env, token_approval_sig: Signature, to: Identifier, amount: BigInt);
+    fn thank_k(e: Env, token_approval_sig: Signature, to: Identifier);
 
     // Send congratz to a kommitter
     fn congrat_k(e: Env, to: AccountId);
@@ -87,10 +87,12 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         put_token_id(&env, &token_id);
 
         // Set Thanks amount reward
-        env.data().set(DataKey::ThankVal, BigInt::from_i32(&env, 35));
+        // env.data().set(DataKey::ThankVal, BigInt::from_i32(&env, 35));
+        set_thank_value(&env, BigInt::from_i32(&env, 35));
 
         // Set Congratz amount reward
-        env.data().set(DataKey::CongratVal, BigInt::from_i32(&env, 25));
+        set_congrat_value(&env, BigInt::from_i32(&env, 25));
+        // env.data().set(DataKey::CongratVal, BigInt::from_i32(&env, 25));
 
         token_id
     }
@@ -114,13 +116,13 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
             &Signature::Invoker, 
             &BigInt::zero(&env), 
             &from, 
-            &Identifier::Contract(env.get_current_contract()), 
+            &admin_id,
             &kommitter_balance
         );
     }
 
     // Imply xfer
-    fn thank_k(env: Env, approval_sign: Signature, to: Identifier, amount: BigInt) {
+    fn thank_k(env: Env, approval_sign: Signature, to: Identifier) {
         // Transfer 35 MTK's to "to"
         let tc_id = get_token_contract_id(&env);
         let client = token::Client::new(&env, tc_id);
@@ -128,7 +130,7 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         let admin_id = get_admin_id(&env);
         let nonce = client.nonce(&admin_id);
 
-        client.xfer(&approval_sign, &nonce, &to, &amount);
+        client.xfer(&approval_sign, &nonce, &to, &get_thank_value(&env));
     }
 
     // Imply xfer
@@ -160,9 +162,17 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
 }
 
 // REWARDS
+fn set_thank_value(env: &Env, new_value: BigInt) {
+    env.data().set(DataKey::ThankVal, new_value);
+}
+
 fn get_thank_value(env: &Env) -> BigInt {
     let key = DataKey::ThankVal;
     env.data().get(key).unwrap().unwrap()
+}
+
+fn set_congrat_value(env: &Env, new_value: BigInt) {
+    env.data().set(DataKey::CongratVal, new_value);
 }
 
 fn get_congrat_value(env: &Env) -> BigInt {
