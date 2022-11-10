@@ -8,7 +8,7 @@ use soroban_auth::{Identifier, Signature};
 use crate::token::{TokenMetadata};
 
 mod token {
-    soroban_sdk::contractimport!(file = "../soroban_token_spec.wasm");
+    soroban_sdk::contractimport!(file = "./soroban_token_spec.wasm");
 }
 
 const ORG_NAME: Symbol = symbol!("ORG_NAME");
@@ -147,8 +147,9 @@ fn add_member(env: &Env, name: Symbol, account: AccountId) {
 }
 
 fn remove_member(env: &Env, from: &AccountId) {
-    // Remove kommitter from the kommitters vector
-    // Bring back it's MKT's to the contract balance
+    // Remove member from the members vector
+
+    // Bring back it's TOKEN's to the admin
     let tc_id = get_token_contract_id(&env);
     let client = token::Client::new(&env, &tc_id);
 
