@@ -11,6 +11,7 @@ mod token {
     soroban_sdk::contractimport!(file = "../soroban_token_spec.wasm");
 }
 
+const ORG_NAME: Symbol = symbol!("ORG_NAME");
 
 #[derive(Clone)]
 #[contracttype]
@@ -18,12 +19,12 @@ pub enum DataKey {
     TokenId,
     AdminId,
     ThankVal,
-    CongratVal,
+    CongratVal
 }
 
 #[derive(Clone)]
 #[contracttype]
-pub enum Kommitter {
+pub enum Member {
     Name(Symbol),
     Account(AccountId),
 }
@@ -31,42 +32,46 @@ pub enum Kommitter {
 #[derive(Clone)]
 #[contracttype]
 pub struct Directory {
-    kommitters: Vec<Kommitter>
+    members: Vec<Member>
 }
-pub struct ReturnFundsContract;
+pub struct OrganizationContract;
 
-pub trait ReturnFundsContractTrait {
+pub trait OrganizationContractTrait {
     // Sets the admin and the vault's token id
     fn initialize(
         e: Env,
-        admin: Identifier
+        admin: Identifier,
+        org_name: Symbol
     ) -> BytesN<32>;
 
-    // Add a kommitter as a member of the contract
-    fn add_k(e: Env, kommitter: Kommitter);
+    // Add a member to the contract
+    fn add_m(e: Env, member: Member);
 
     // Remove a kommitter from the contract and get backs its MTK balance
-    fn remove_k(e: Env, from: Identifier);
+    fn remove_m(e: Env, from: Identifier);
 
     // Send thanks to a kommitter
-    fn thank_k(e: Env, token_approval_sig: Signature, to: Identifier);
+    fn thank_m(e: Env, token_approval_sig: Signature, to: Identifier);
 
     // Send congratz to a kommitter
-    fn congrat_k(e: Env, to: AccountId);
+    fn congrat_m(env: Env, approval_sign: Signature, to: Identifier);
 
     fn get_tc_id(env: Env) -> BytesN<32>;
 
     fn get_bal(env: Env) -> BigInt;
+
+    fn org_name(env: Env) -> Symbol;
     
     // Add the initial balance to the contract
     fn fund_c(env: Env, approval_sign: Signature);
 }
 
 #[contractimpl]
-impl ReturnFundsContractTrait for ReturnFundsContract {
+impl OrganizationContractTrait for OrganizationContract {
     fn initialize(
         env: Env, 
-        admin: Identifier
+        admin: Identifier,
+        org_name: Symbol
     ) -> BytesN<32> {
         put_admin_id(&env, &admin);
         let token_id = env.register_contract_token(None);
@@ -80,6 +85,9 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
                 decimals: 7,
             },
         );
+
+        // Set organization name
+        set_org_name(&env, org_name);
 
         let admin_balance = admin.clone();
         log!(&env, "======> BALANCE -> {}", token_client.balance(&admin_balance));
@@ -97,12 +105,12 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         token_id
     }
 
-    fn add_k(env: Env, kommitter: Kommitter) {
+    fn add_m(env: Env, member: Member) {
         // Push a kommitter into the kommitters vector
     }
     
     // Imply xfer_from
-    fn remove_k(env: Env, from: Identifier) {
+    fn remove_m(env: Env, from: Identifier) {
         // Remove kommitter from the kommitters vector
         // Bring back it's MKT's to the contract balance
         let tc_id = get_token_contract_id(&env);
@@ -121,9 +129,8 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         );
     }
 
-    // Imply xfer
-    fn thank_k(env: Env, approval_sign: Signature, to: Identifier) {
-        // Transfer 35 MTK's to "to"
+    fn thank_m(env: Env, approval_sign: Signature, to: Identifier) {
+        // Transfer 35 TOKEN's to "to"
         let tc_id = get_token_contract_id(&env);
         let client = token::Client::new(&env, tc_id);
 
@@ -132,10 +139,16 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
 
         client.xfer(&approval_sign, &nonce, &to, &get_thank_value(&env));
     }
+    
+    fn congrat_m(env: Env, approval_sign: Signature, to: Identifier) {
+        // Transfer 25 TOKEN's to "to"
+        let tc_id = get_token_contract_id(&env);
+        let client = token::Client::new(&env, tc_id);
 
-    // Imply xfer
-    fn congrat_k(env: Env, to: AccountId) {
-        // Transfer 25 MTK's to "to"
+        let admin_id = get_admin_id(&env);
+        let nonce = client.nonce(&admin_id);
+
+        client.xfer(&approval_sign, &nonce, &to, &get_congrat_value(&env));
     }
 
     fn get_tc_id(env: Env) -> BytesN<32> {
@@ -151,6 +164,10 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
         client.balance(&admin_id)
     }
 
+    fn org_name(env: Env) -> Symbol {
+        get_org_name(&env)
+    }
+
     fn fund_c(env: Env, approval_sign: Signature) {
         let token_id = get_token_contract_id(&env);
         let admin_id = get_admin_id(&env);
@@ -162,6 +179,14 @@ impl ReturnFundsContractTrait for ReturnFundsContract {
 }
 
 // REWARDS
+fn set_org_name(env: &Env, new_value: Symbol) {
+    env.data().set(ORG_NAME, new_value);
+}
+
+fn get_org_name(env: &Env) -> Symbol {
+    env.data().get(ORG_NAME).unwrap().unwrap()
+}
+
 fn set_thank_value(env: &Env, new_value: BigInt) {
     env.data().set(DataKey::ThankVal, new_value);
 }

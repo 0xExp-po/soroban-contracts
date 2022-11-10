@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{ReturnFundsContract, ReturnFundsContractClient, Identifier};
+use super::{OrganizationContract, OrganizationContractClient, Identifier};
 
 use soroban_sdk::{symbol, vec, Env, testutils::{Accounts, Logger}, BigInt, IntoVal};
 use soroban_auth::{Signature, testutils::ed25519};
@@ -147,10 +147,11 @@ fn test_sign() {
     let approval_user_id = Identifier::Account(approval_user.clone());
     
     /// CREATE OUR CUSTOM CONTRACT
-    let contract_id = env.register_contract(None, ReturnFundsContract);
-    let contract_client = ReturnFundsContractClient::new(&env, &contract_id);
+    let contract_id = env.register_contract(None, OrganizationContract);
+    let contract_client = OrganizationContractClient::new(&env, &contract_id);
     
-    contract_client.initialize(&admin_id);
+    let org_name = symbol!("Kommit");
+    contract_client.initialize(&admin_id, &org_name);
 
     let token_contract_id = contract_client.get_tc_id();
     let token_client = token::Client::new(&env, &token_contract_id);
@@ -165,6 +166,9 @@ fn test_sign() {
         (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, 10000)),
     );
     let balance = contract_client.get_bal();
+
+    let fetched_org_name = contract_client.org_name();
+    std::println!("======= [{:?}] CONTRACT START ========:", fetched_org_name);
     std::println!("======= ADMIN BALANCE START ========: {}", balance);
     std::println!("======= CONTRACT BALANCE - START ========: {}", token_client.balance(&Identifier::Contract(token_contract_id.clone())));
 
@@ -194,7 +198,7 @@ fn test_sign() {
         (&admin_id, &nonce, &approval_user_id, &BigInt::from_u32(&env, 35)),
     );
 
-    contract_client.thank_k(&xfer_approval_sign, &approval_user_id);
+    contract_client.thank_m(&xfer_approval_sign, &approval_user_id);
 
     let token_id = contract_client.get_tc_id();
 
@@ -215,7 +219,7 @@ fn test_sign() {
 
     std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", client.balance(&approval_user_id));
 
-   contract_client.remove_k(&approval_user_id);
+   contract_client.remove_m(&approval_user_id);
     
     std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", client.balance(&admin_id));
     std::println!("======= CONTRACT BALANCE - AFTER REMOVE ========: {}", client.balance(&Identifier::Contract(token_id.clone())));
