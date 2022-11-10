@@ -23,13 +23,6 @@ pub enum DataKey {
     Members
 }
 
-#[derive(Clone, Debug)]
-#[contracttype]
-pub struct Member {
-    name: Symbol,
-    account: AccountId
-}
-
 pub struct OrganizationContract;
 
 pub trait OrganizationContractTrait {
@@ -41,7 +34,7 @@ pub trait OrganizationContractTrait {
     ) -> BytesN<32>;
 
     // Add a member to the contract
-    fn add_m(env: Env, name: Symbol, account: AccountId);
+    fn add_m(env: Env, account: AccountId);
 
     // Remove a kommitter from the contract and get backs its MTK balance
     fn remove_m(env: Env, from: AccountId);
@@ -56,7 +49,7 @@ pub trait OrganizationContractTrait {
 
     fn get_bal(env: Env) -> BigInt;
     
-    fn get_m(env: Env) -> Vec<Member>;
+    fn get_m(env: Env) -> Vec<AccountId>;
 
     fn org_name(env: Env) -> Symbol;
     
@@ -95,8 +88,8 @@ impl OrganizationContractTrait for OrganizationContract {
         token_id
     }
 
-    fn add_m(env: Env, name: Symbol, account: AccountId) {
-        add_member(&env, name, account);
+    fn add_m(env: Env, account: AccountId) {
+        add_member(&env, account);
     }
     
     fn remove_m(env: Env, from: AccountId) {
@@ -127,20 +120,16 @@ impl OrganizationContractTrait for OrganizationContract {
         fund_contract_balance(&env, &approval_sign);
     }
 
-    fn get_m(env: Env) -> Vec<Member> {
+    fn get_m(env: Env) -> Vec<AccountId> {
         get_members(&env)
     }
 }
 
 // ORGANIZATION
-fn add_member(env: &Env, name: Symbol, account: AccountId) {
-    let member = Member {
-        name: name,
-        account: account
-    };
-
+fn add_member(env: &Env, account: AccountId) {
     let mut members = get_members(&env);
-    members.push_back(member);
+
+    members.push_back(account);
 
     let key = DataKey::Members;
     env.data().set(key, members);
@@ -148,6 +137,14 @@ fn add_member(env: &Env, name: Symbol, account: AccountId) {
 
 fn remove_member(env: &Env, from: &AccountId) {
     // Remove member from the members vector
+    let mut members: Vec<AccountId> = get_members(&env);
+    
+    // Validate when no matches found
+    let index = members.first_index_of(from);
+    members.remove(index.unwrap());
+
+    let key = DataKey::Members;
+    env.data().set(key, members);
 
     // Bring back it's TOKEN's to the admin
     let tc_id = get_token_contract_id(&env);

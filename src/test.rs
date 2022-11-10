@@ -214,6 +214,11 @@ fn test_sign() {
     std::println!("======= APPROBAL USER BALANCE - AFTER XFER ========: {}", client.balance(&approval_user_id));
     std::println!("===============");
 
+    contract_client.add_m(&approval_user);
+    contract_client.add_m(&doe_user);
+
+    std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
+
     token_client.with_source_account(&approval_user).approve(
         &Signature::Invoker,
         &BigInt::zero(&env),
@@ -223,15 +228,12 @@ fn test_sign() {
 
     std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", client.balance(&approval_user_id));
 
-   contract_client.remove_m(&approval_user);
+    contract_client.remove_m(&approval_user);
     
     std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", client.balance(&admin_id));
     std::println!("======= CONTRACT BALANCE - AFTER REMOVE ========: {}", client.balance(&Identifier::Contract(token_id.clone())));
     std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", client.balance(&approval_user_id));
-
-    contract_client.add_m(&symbol!("John_Doe"), &doe_user);
-
-
+    
     std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
     
     
