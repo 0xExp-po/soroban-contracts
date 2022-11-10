@@ -73,7 +73,7 @@ impl OrganizationContractTrait for OrganizationContract {
         admin: Identifier,
         org_name: Symbol
     ) -> BytesN<32> {
-        put_admin_id(&env, &admin);
+        set_admin_id(&env, &admin);
         let token_id = env.register_contract_token(None);
         let token_client = token::Client::new(&env, &token_id);
 
@@ -86,69 +86,32 @@ impl OrganizationContractTrait for OrganizationContract {
             },
         );
 
-        // Set organization name
-        set_org_name(&env, org_name);
+        set_organization_name(&env, org_name);
 
-        let admin_balance = admin.clone();
-        log!(&env, "======> BALANCE -> {}", token_client.balance(&admin_balance));
+        set_token_id(&env, &token_id);
 
-        put_token_id(&env, &token_id);
-
-        // Set Thanks amount reward
-        // env.data().set(DataKey::ThankVal, BigInt::from_i32(&env, 35));
         set_thank_value(&env, BigInt::from_i32(&env, 35));
 
-        // Set Congratz amount reward
         set_congrat_value(&env, BigInt::from_i32(&env, 25));
-        // env.data().set(DataKey::CongratVal, BigInt::from_i32(&env, 25));
 
         token_id
     }
 
     fn add_m(env: Env, member: Member) {
-        // Push a kommitter into the kommitters vector
+        // Push a member into the members vector
     }
     
     // Imply xfer_from
     fn remove_m(env: Env, from: Identifier) {
-        // Remove kommitter from the kommitters vector
-        // Bring back it's MKT's to the contract balance
-        let tc_id = get_token_contract_id(&env);
-        let client = token::Client::new(&env, &tc_id);
-
-        let admin_id = get_admin_id(&env);
-
-        let kommitter_balance = client.balance(&from);
-
-        client.xfer_from(
-            &Signature::Invoker, 
-            &BigInt::zero(&env), 
-            &from, 
-            &admin_id,
-            &kommitter_balance
-        );
+        remove_member(&env, &from);
     }
 
     fn thank_m(env: Env, approval_sign: Signature, to: Identifier) {
-        // Transfer 35 TOKEN's to "to"
-        let tc_id = get_token_contract_id(&env);
-        let client = token::Client::new(&env, tc_id);
-
-        let admin_id = get_admin_id(&env);
-        let nonce = client.nonce(&admin_id);
-
-        client.xfer(&approval_sign, &nonce, &to, &get_thank_value(&env));
+        thank_member(&env, &approval_sign, &to);
     }
     
     fn congrat_m(env: Env, approval_sign: Signature, to: Identifier) {
-        // Transfer 25 TOKEN's to "to"
-        let tc_id = get_token_contract_id(&env);
-        let client = token::Client::new(&env, tc_id);
-
-        let admin_id = get_admin_id(&env);
-        let nonce = client.nonce(&admin_id);
-
-        client.xfer(&approval_sign, &nonce, &to, &get_congrat_value(&env));
+        congrat_member(&env, &approval_sign, &to);
     }
 
     fn get_tc_id(env: Env) -> BytesN<32> {
@@ -156,37 +119,86 @@ impl OrganizationContractTrait for OrganizationContract {
     }
 
     fn get_bal(env: Env) -> BigInt {
-        let tc_id = get_token_contract_id(&env);
-        let client = token::Client::new(&env, tc_id);
-
-        let admin_id = get_admin_id(&env);
-
-        client.balance(&admin_id)
+        get_contract_balance(&env)
     }
 
     fn org_name(env: Env) -> Symbol {
-        get_org_name(&env)
+        get_organization_name(&env)
     }
 
     fn fund_c(env: Env, approval_sign: Signature) {
-        let token_id = get_token_contract_id(&env);
-        let admin_id = get_admin_id(&env);
-        let token_client = token::Client::new(&env, &token_id);
-        
-        let nonce = token_client.nonce(&admin_id);
-        token_client.mint(&approval_sign, &nonce, &admin_id, &BigInt::from_u32(&env, 10000));
+        fund_contract_balance(&env, &approval_sign);
     }
 }
 
-// REWARDS
-fn set_org_name(env: &Env, new_value: Symbol) {
+// ORGANIZATION
+fn add_member() {
+
+}
+
+fn remove_member(env: &Env, from: &Identifier) {
+    // Remove kommitter from the kommitters vector
+    // Bring back it's MKT's to the contract balance
+    let tc_id = get_token_contract_id(&env);
+    let client = token::Client::new(&env, &tc_id);
+
+    let admin_id = get_admin_id(&env);
+
+    let kommitter_balance = client.balance(&from);
+
+    client.xfer_from(
+        &Signature::Invoker, 
+        &BigInt::zero(&env), 
+        &from, 
+        &admin_id,
+        &kommitter_balance
+    );
+}
+
+fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
+    let token_id = get_token_contract_id(&env);
+    let admin_id = get_admin_id(&env);
+    let token_client = token::Client::new(&env, &token_id);
+    
+    let nonce = token_client.nonce(&admin_id);
+    token_client.mint(&approval_sign, &nonce, &admin_id, &BigInt::from_u32(&env, 10000));
+}
+
+fn congrat_member(env: &Env, approval_sign: &Signature, to: &Identifier) {
+    transfer(&env, &approval_sign, &to, &get_congrat_value(&env));
+}
+
+fn thank_member(env: &Env, approval_sign: &Signature, to: &Identifier) {
+    transfer(&env, &approval_sign, &to, &get_thank_value(&env));
+}
+
+fn transfer(env: &Env, approval_sign: &Signature, to: &Identifier, amount: &BigInt) {
+    let tc_id = get_token_contract_id(&env);
+    let client = token::Client::new(&env, tc_id);
+
+    let admin_id = get_admin_id(&env);
+    let nonce = client.nonce(&admin_id);
+
+    client.xfer(&approval_sign, &nonce, &to, &amount);
+}
+
+fn get_contract_balance(env: &Env) -> BigInt {
+    let tc_id = get_token_contract_id(&env);
+    let client = token::Client::new(&env, tc_id);
+
+    let admin_id = get_admin_id(&env);
+
+    client.balance(&admin_id)
+}
+fn set_organization_name(env: &Env, new_value: Symbol) {
     env.data().set(ORG_NAME, new_value);
 }
 
-fn get_org_name(env: &Env) -> Symbol {
+fn get_organization_name(env: &Env) -> Symbol {
     env.data().get(ORG_NAME).unwrap().unwrap()
 }
 
+// REWARDS
 fn set_thank_value(env: &Env, new_value: BigInt) {
     env.data().set(DataKey::ThankVal, new_value);
 }
@@ -211,7 +223,7 @@ fn get_admin_id(env: &Env) -> Identifier {
     env.data().get(key).unwrap().unwrap()
 }
 
-fn put_admin_id(env: &Env, account_id: &Identifier) {
+fn set_admin_id(env: &Env, account_id: &Identifier) {
     env.data().set(DataKey::AdminId, account_id);
 }
 
@@ -221,7 +233,7 @@ fn get_token_contract_id(env: &Env) -> BytesN<32> {
     env.data().get(key).unwrap().unwrap()
 }
 
-fn put_token_id(e: &Env, token_id: &BytesN<32>) {
+fn set_token_id(e: &Env, token_id: &BytesN<32>) {
     e.data().set(DataKey::TokenId, token_id);
 }
 
