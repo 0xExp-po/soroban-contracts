@@ -1,7 +1,7 @@
 #![no_std]
 #![allow(warnings)]
 
-use soroban_sdk::{contractimpl, contracttype, log, symbol, vec, Env, IntoVal, Symbol, Vec, BytesN, AccountId, BigInt};
+use soroban_sdk::{contractimpl, contracttype, log, symbol, vec, Env, IntoVal, Symbol, Vec, BytesN, AccountId, BigInt, RawVal};
 
 use soroban_auth::{Identifier, Signature};
 
@@ -19,21 +19,17 @@ pub enum DataKey {
     TokenId,
     AdminId,
     ThankVal,
-    CongratVal
+    CongratVal,
+    Members
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[contracttype]
-pub enum Member {
-    Name(Symbol),
-    Account(AccountId),
+pub struct Member {
+    name: Symbol,
+    account: AccountId
 }
 
-#[derive(Clone)]
-#[contracttype]
-pub struct Directory {
-    members: Vec<Member>
-}
 pub struct OrganizationContract;
 
 pub trait OrganizationContractTrait {
@@ -45,10 +41,10 @@ pub trait OrganizationContractTrait {
     ) -> BytesN<32>;
 
     // Add a member to the contract
-    fn add_m(e: Env, member: Member);
+    fn add_m(env: Env, name: Symbol, account: AccountId);
 
     // Remove a kommitter from the contract and get backs its MTK balance
-    fn remove_m(e: Env, from: Identifier);
+    fn remove_m(env: Env, from: AccountId);
 
     // Send thanks to a kommitter
     fn thank_m(e: Env, token_approval_sig: Signature, to: Identifier);
@@ -59,6 +55,8 @@ pub trait OrganizationContractTrait {
     fn get_tc_id(env: Env) -> BytesN<32>;
 
     fn get_bal(env: Env) -> BigInt;
+    
+    fn get_m(env: Env) -> Vec<Member>;
 
     fn org_name(env: Env) -> Symbol;
     
@@ -97,12 +95,11 @@ impl OrganizationContractTrait for OrganizationContract {
         token_id
     }
 
-    fn add_m(env: Env, member: Member) {
-        // Push a member into the members vector
+    fn add_m(env: Env, name: Symbol, account: AccountId) {
+        add_member(&env, name, account);
     }
     
-    // Imply xfer_from
-    fn remove_m(env: Env, from: Identifier) {
+    fn remove_m(env: Env, from: AccountId) {
         remove_member(&env, &from);
     }
 
@@ -129,30 +126,53 @@ impl OrganizationContractTrait for OrganizationContract {
     fn fund_c(env: Env, approval_sign: Signature) {
         fund_contract_balance(&env, &approval_sign);
     }
+
+    fn get_m(env: Env) -> Vec<Member> {
+        get_members(&env)
+    }
 }
 
 // ORGANIZATION
-fn add_member() {
+fn add_member(env: &Env, name: Symbol, account: AccountId) {
+    let member = Member {
+        name: name,
+        account: account
+    };
 
+    let mut members = get_members(&env);
+    members.push_back(member);
+
+    let key = DataKey::Members;
+    env.data().set(key, members);
 }
 
-fn remove_member(env: &Env, from: &Identifier) {
+fn remove_member(env: &Env, from: &AccountId) {
     // Remove kommitter from the kommitters vector
     // Bring back it's MKT's to the contract balance
     let tc_id = get_token_contract_id(&env);
     let client = token::Client::new(&env, &tc_id);
 
     let admin_id = get_admin_id(&env);
-
-    let kommitter_balance = client.balance(&from);
+    let from_identifier = get_account_identifier(from.clone());
+    let kommitter_balance = client.balance(&from_identifier);
 
     client.xfer_from(
         &Signature::Invoker, 
         &BigInt::zero(&env), 
-        &from, 
+        &from_identifier, 
         &admin_id,
         &kommitter_balance
     );
+}
+
+fn get_members<T: soroban_sdk::TryFromVal<Env, RawVal> + soroban_sdk::IntoVal<Env, RawVal>>(
+    e: &Env,
+) -> Vec<T> {
+    let key = DataKey::Members;
+    e.data()
+        .get(key)
+        .unwrap_or(Ok(vec![e])) // if no members on vector
+        .unwrap()
 }
 
 fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
@@ -165,10 +185,12 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
 }
 
 fn congrat_member(env: &Env, approval_sign: &Signature, to: &Identifier) {
+    // Validate "to" is a member of the contract
     transfer(&env, &approval_sign, &to, &get_congrat_value(&env));
 }
 
 fn thank_member(env: &Env, approval_sign: &Signature, to: &Identifier) {
+    // Validate "to" is a member of the contract
     transfer(&env, &approval_sign, &to, &get_thank_value(&env));
 }
 

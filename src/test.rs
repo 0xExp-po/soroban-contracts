@@ -145,6 +145,10 @@ fn test_sign() {
     // APPROVAL USER
     let approval_user = env.accounts().generate();
     let approval_user_id = Identifier::Account(approval_user.clone());
+
+    // John Doe
+    let doe_user = env.accounts().generate();
+    let doe_user_id = Identifier::Account(doe_user.clone());
     
     /// CREATE OUR CUSTOM CONTRACT
     let contract_id = env.register_contract(None, OrganizationContract);
@@ -219,11 +223,17 @@ fn test_sign() {
 
     std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", client.balance(&approval_user_id));
 
-   contract_client.remove_m(&approval_user_id);
+   contract_client.remove_m(&approval_user);
     
     std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", client.balance(&admin_id));
     std::println!("======= CONTRACT BALANCE - AFTER REMOVE ========: {}", client.balance(&Identifier::Contract(token_id.clone())));
     std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", client.balance(&approval_user_id));
+
+    contract_client.add_m(&symbol!("John_Doe"), &doe_user);
+
+
+    std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
+    
     
     // let logs = env.logger().all();
     // std::println!("======= LOGS ========: {}", logs.join("\n"));
