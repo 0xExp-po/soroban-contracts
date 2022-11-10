@@ -137,9 +137,6 @@ fn test_sign() {
     let env = Env::default();
 
     // USERS
-    let (usr1_id, usr1_sign) = ed25519::generate(&env);
-    let (usr2_id, usr2_sign) = ed25519::generate(&env);
-    let (spender_id, spender_sign) = ed25519::generate(&env);
     let (admin_id, admin_sign) = ed25519::generate(&env);
 
     // APPROVAL USER
@@ -203,7 +200,7 @@ fn test_sign() {
     );
 
     contract_client.add_m(&approval_user);
-    contract_client.thank_m(&xfer_approval_sign, &approval_user_id, &approval_user);
+    contract_client.thank_m(&xfer_approval_sign, &approval_user);
 
     let token_id = contract_client.get_tc_id();
 

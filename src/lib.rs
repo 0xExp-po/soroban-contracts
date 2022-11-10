@@ -26,24 +26,19 @@ pub enum DataKey {
 pub struct OrganizationContract;
 
 pub trait OrganizationContractTrait {
-    // Sets the admin and the vault's token id
     fn initialize(
         e: Env,
         admin: Identifier,
         org_name: Symbol
     ) -> BytesN<32>;
 
-    // Add a member to the contract
     fn add_m(env: Env, account: AccountId);
 
-    // Remove a kommitter from the contract and get backs its MTK balance
     fn remove_m(env: Env, from: AccountId);
 
-    // Send thanks to a kommitter
-    fn thank_m(e: Env, token_approval_sig: Signature, to: Identifier, acc_id: AccountId);
+    fn thank_m(e: Env, token_approval_sig: Signature, to: AccountId);
 
-    // Send congratz to a kommitter
-    fn congrat_m(env: Env, approval_sign: Signature, to: Identifier);
+    fn congrat_m(env: Env, approval_sign: Signature, to: AccountId);
 
     fn get_tc_id(env: Env) -> BytesN<32>;
 
@@ -96,11 +91,11 @@ impl OrganizationContractTrait for OrganizationContract {
         remove_member(&env, &from);
     }
 
-    fn thank_m(env: Env, approval_sign: Signature, to: Identifier, acc_id: AccountId) {
-        thank_member(&env, &approval_sign, &to, &acc_id);
+    fn thank_m(env: Env, approval_sign: Signature, to: AccountId) {
+        thank_member(&env, &approval_sign, &to);
     }
     
-    fn congrat_m(env: Env, approval_sign: Signature, to: Identifier) {
+    fn congrat_m(env: Env, approval_sign: Signature, to: AccountId) {
         congrat_member(&env, &approval_sign, &to);
     }
 
@@ -146,7 +141,6 @@ fn remove_member(env: &Env, from: &AccountId) {
     // Remove member from the members vector
     let mut members: Vec<AccountId> = get_members(&env);
     
-    // Validate when no matches found
     let index;
 
     match members.first_index_of(from) {
@@ -195,20 +189,20 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
     token_client.mint(&approval_sign, &nonce, &admin_id, &BigInt::from_u32(&env, 10000));
 }
 
-fn congrat_member(env: &Env, approval_sign: &Signature, to: &Identifier) {
+fn congrat_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
     // Validate "to" is a member of the contract
-    // if !is_member(&env, &acc_id) {
-    //     panic!("The user account doesn't belong to the organization");
-    // }
-    transfer(&env, &approval_sign, &to, &get_congrat_value(&env));
-}
-
-fn thank_member(env: &Env, approval_sign: &Signature, to: &Identifier, acc_id: &AccountId) {
-    // Validate "to" is a member of the contract
-    if !is_member(&env, &acc_id) {
+    if !is_member(&env, &to) {
         panic!("The user account doesn't belong to the organization");
     }
-    transfer(&env, &approval_sign, &to, &get_thank_value(&env));
+    transfer(&env, &approval_sign, &&get_account_identifier(to.clone()), &get_congrat_value(&env));
+}
+
+fn thank_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
+    // Validate "to" is a member of the contract
+    if !is_member(&env, &to) {
+        panic!("The user account doesn't belong to the organization");
+    }
+    transfer(&env, &approval_sign, &get_account_identifier(to.clone()), &get_thank_value(&env));
 }
 
 fn transfer(env: &Env, approval_sign: &Signature, to: &Identifier, amount: &BigInt) {
