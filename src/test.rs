@@ -202,7 +202,8 @@ fn test_sign() {
         (&admin_id, &nonce, &approval_user_id, &BigInt::from_u32(&env, 35)),
     );
 
-    contract_client.thank_m(&xfer_approval_sign, &approval_user_id);
+    contract_client.add_m(&approval_user);
+    contract_client.thank_m(&xfer_approval_sign, &approval_user_id, &approval_user);
 
     let token_id = contract_client.get_tc_id();
 
@@ -214,7 +215,6 @@ fn test_sign() {
     std::println!("======= APPROBAL USER BALANCE - AFTER XFER ========: {}", client.balance(&approval_user_id));
     std::println!("===============");
 
-    contract_client.add_m(&approval_user);
     contract_client.add_m(&doe_user);
 
     std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
