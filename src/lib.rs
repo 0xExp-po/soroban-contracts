@@ -11,11 +11,10 @@ mod token {
     soroban_sdk::contractimport!(file = "./soroban_token_spec.wasm");
 }
 
-const ORG_NAME: Symbol = symbol!("ORG_NAME");
-
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
+    OrgName,
     TokenId,
     AdminId,
     Reward,
@@ -207,11 +206,11 @@ fn get_contract_balance(env: &Env) -> BigInt {
     client.balance(&admin_id)
 }
 fn set_organization_name(env: &Env, new_value: Symbol) {
-    env.data().set(ORG_NAME, new_value);
+    env.data().set(DataKey::OrgName, new_value);
 }
 
 fn get_organization_name(env: &Env) -> Symbol {
-    env.data().get(ORG_NAME).unwrap().unwrap()
+    env.data().get(DataKey::OrgName).unwrap().unwrap()
 }
 
 // REWARDS
