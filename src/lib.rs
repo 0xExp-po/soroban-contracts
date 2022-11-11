@@ -57,14 +57,14 @@ fn remove_member(env: &Env, from: &AccountId) {
 
     let admin_id = get_admin_id(&env);
     let from_identifier = get_account_identifier(from.clone());
-    let kommitter_balance = client.balance(&from_identifier);
+    let member_balance = client.balance(&from_identifier);
 
     client.xfer_from(
         &Signature::Invoker, 
         &BigInt::zero(&env), 
         &from_identifier, 
         &admin_id,
-        &kommitter_balance
+        &member_balance
     );
 }
 

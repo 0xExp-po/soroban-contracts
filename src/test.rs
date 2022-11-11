@@ -33,8 +33,8 @@ fn happy_path() {
     let (admin_id, admin_sign) = ed25519::generate(&env);
 
     // APPROVAL USER
-    let approval_user = env.accounts().generate();
-    let approval_user_id = Identifier::Account(approval_user.clone());
+    let member = env.accounts().generate();
+    let member_id = Identifier::Account(member.clone());
 
     // John Doe
     let doe_user = env.accounts().generate();
@@ -100,48 +100,48 @@ fn happy_path() {
         &admin_sign,
         &token_id,
         symbol!("xfer"),
-        (&admin_id, &nonce, &approval_user_id, &BigInt::from_u32(&env, reward_amount)),
+        (&admin_id, &nonce, &member_id, &BigInt::from_u32(&env, reward_amount)),
     );
 
-    contract_client.add_m(&approval_user);
+    contract_client.add_m(&member);
 
     //Validate member was correctly inserted
     assert!(
-        contract_client.get_m().contains(&approval_user),
+        contract_client.get_m().contains(&member),
         "Member was successfully removed"
     );
 
-    contract_client.reward_m(&xfer_approval_sign, &approval_user);
+    contract_client.reward_m(&xfer_approval_sign, &member);
 
     assert_eq!(
-        token_client.balance(&approval_user_id),
+        token_client.balance(&member_id),
         BigInt::from_u32(&env, reward_amount),
         "Correct balance found on rewarded account"
     );
 
     std::println!("=======================================================");
     std::println!("======= ADMIN BALANCE - AFTER REWARD ========: {}", token_client.balance(&admin_id));
-    std::println!("======= APPROBAL USER BALANCE - AFTER REWARD ========: {}", token_client.balance(&approval_user_id));
+    std::println!("======= APPROBAL USER BALANCE - AFTER REWARD ========: {}", token_client.balance(&member_id));
     std::println!("=======================================================\n\n");
 
     contract_client.add_m(&doe_user);
 
     std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
 
-    token_client.with_source_account(&approval_user).approve(
+    token_client.with_source_account(&member).approve(
         &Signature::Invoker,
         &BigInt::zero(&env),
         &Identifier::Contract(contract_id),
-        &token_client.balance(&approval_user_id)
+        &token_client.balance(&member_id)
     );
 
-    std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", token_client.balance(&approval_user_id));
+    std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", token_client.balance(&member_id));
 
-    contract_client.remove_m(&approval_user);
+    contract_client.remove_m(&member);
 
     // Member was correctly removed from organization
     assert!(
-        !contract_client.get_m().contains(approval_user),
+        !contract_client.get_m().contains(member),
         "Member was successfully removed"
     );
 
@@ -154,13 +154,13 @@ fn happy_path() {
 
     // Ensure Member funds where removed
     assert_eq!(
-        token_client.balance(&approval_user_id),
+        token_client.balance(&member_id),
         &BigInt::from_u32(&env, 0),
         "Contract admin gets back member funds"
     );
 
     std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", token_client.balance(&admin_id));
-    std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", token_client.balance(&approval_user_id));
+    std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", token_client.balance(&member_id));
     std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
 }
 
