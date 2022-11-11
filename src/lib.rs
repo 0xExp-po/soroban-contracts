@@ -18,7 +18,8 @@ pub enum DataKey {
     TokenId,
     AdminId,
     Reward,
-    Members
+    Members,
+    AllowedF
 }
 
 pub struct OrganizationContract;
@@ -27,7 +28,9 @@ pub trait OrganizationContractTrait {
     fn initialize(
         e: Env,
         admin: Identifier,
-        org_name: Symbol
+        org_name: Symbol,
+        reward_value: u32,
+        fund_amount: u32
     ) -> BytesN<32>;
 
     fn add_m(env: Env, account: AccountId);
@@ -53,7 +56,9 @@ impl OrganizationContractTrait for OrganizationContract {
     fn initialize(
         env: Env, 
         admin: Identifier,
-        org_name: Symbol
+        org_name: Symbol,
+        reward_value: u32,
+        fund_amount: u32
     ) -> BytesN<32> {
         set_admin_id(&env, &admin);
         let token_id = env.register_contract_token(None);
@@ -70,9 +75,11 @@ impl OrganizationContractTrait for OrganizationContract {
 
         set_organization_name(&env, org_name);
 
+        set_allowed_funds_to_issue(&env, BigInt::from_u32(&env, fund_amount));
+
         set_token_id(&env, &token_id);
 
-        set_reward_value(&env, BigInt::from_i32(&env, 35));
+        set_reward_value(&env, BigInt::from_u32(&env, reward_value));
 
         token_id
     }
@@ -176,7 +183,7 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
     let token_client = token::Client::new(&env, &token_id);
     
     let nonce = token_client.nonce(&admin_id);
-    token_client.mint(&approval_sign, &nonce, &admin_id, &BigInt::from_u32(&env, 10000));
+    token_client.mint(&approval_sign, &nonce, &admin_id, &get_allowed_funds_to_issue(&env));
 }
 
 fn reward_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
@@ -205,12 +212,22 @@ fn get_contract_balance(env: &Env) -> BigInt {
 
     client.balance(&admin_id)
 }
+
 fn set_organization_name(env: &Env, new_value: Symbol) {
     env.data().set(DataKey::OrgName, new_value);
 }
 
 fn get_organization_name(env: &Env) -> Symbol {
     env.data().get(DataKey::OrgName).unwrap().unwrap()
+}
+
+// FUNDS ALLOWED TO ISSUE
+fn set_allowed_funds_to_issue(env: &Env, new_value: BigInt) {
+    env.data().set(DataKey::AllowedF, new_value);
+}
+
+fn get_allowed_funds_to_issue(env: &Env) -> BigInt {
+    env.data().get(DataKey::AllowedF).unwrap().unwrap()
 }
 
 // REWARDS

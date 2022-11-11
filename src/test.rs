@@ -151,8 +151,10 @@ fn test_sign() {
     let contract_id = env.register_contract(None, OrganizationContract);
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
     
+    let reward_amount = 30;
+    let allowed_funds_to_issue = 10000;
     let org_name = symbol!("Kommit");
-    contract_client.initialize(&admin_id, &org_name);
+    contract_client.initialize(&admin_id, &org_name, &reward_amount, &allowed_funds_to_issue);
 
     let token_contract_id = contract_client.get_tc_id();
     let token_client = token::Client::new(&env, &token_contract_id);
@@ -164,7 +166,7 @@ fn test_sign() {
         &admin_sign,
         &token_contract_id,
         symbol!("mint"),
-        (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, 10000)),
+        (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, allowed_funds_to_issue)),
     );
     let balance = contract_client.get_bal();
 
@@ -196,7 +198,7 @@ fn test_sign() {
         // Arguments of the contract function call.
         // Notice that instead of the signature (first `mint` argument), public key
         // is used as the first argument here.
-        (&admin_id, &nonce, &approval_user_id, &BigInt::from_u32(&env, 35)),
+        (&admin_id, &nonce, &approval_user_id, &BigInt::from_u32(&env, reward_amount)),
     );
 
     contract_client.add_m(&approval_user);
