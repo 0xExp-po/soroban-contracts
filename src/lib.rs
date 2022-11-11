@@ -18,8 +18,7 @@ const ORG_NAME: Symbol = symbol!("ORG_NAME");
 pub enum DataKey {
     TokenId,
     AdminId,
-    ThankVal,
-    CongratVal,
+    Reward,
     Members
 }
 
@@ -36,9 +35,7 @@ pub trait OrganizationContractTrait {
 
     fn remove_m(env: Env, from: AccountId);
 
-    fn thank_m(e: Env, token_approval_sig: Signature, to: AccountId);
-
-    fn congrat_m(env: Env, approval_sign: Signature, to: AccountId);
+    fn reward_m(e: Env, token_approval_sig: Signature, to: AccountId);
 
     fn get_tc_id(env: Env) -> BytesN<32>;
 
@@ -76,9 +73,7 @@ impl OrganizationContractTrait for OrganizationContract {
 
         set_token_id(&env, &token_id);
 
-        set_thank_value(&env, BigInt::from_i32(&env, 35));
-
-        set_congrat_value(&env, BigInt::from_i32(&env, 25));
+        set_reward_value(&env, BigInt::from_i32(&env, 35));
 
         token_id
     }
@@ -91,14 +86,10 @@ impl OrganizationContractTrait for OrganizationContract {
         remove_member(&env, &from);
     }
 
-    fn thank_m(env: Env, approval_sign: Signature, to: AccountId) {
-        thank_member(&env, &approval_sign, &to);
+    fn reward_m(env: Env, approval_sign: Signature, to: AccountId) {
+        reward_member(&env, &approval_sign, &to);
     }
     
-    fn congrat_m(env: Env, approval_sign: Signature, to: AccountId) {
-        congrat_member(&env, &approval_sign, &to);
-    }
-
     fn get_tc_id(env: Env) -> BytesN<32> {
         get_token_contract_id(&env)
     }
@@ -189,20 +180,12 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
     token_client.mint(&approval_sign, &nonce, &admin_id, &BigInt::from_u32(&env, 10000));
 }
 
-fn congrat_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
+fn reward_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
     // Validate "to" is a member of the contract
     if !is_member(&env, &to) {
         panic!("The user account doesn't belong to the organization");
     }
-    transfer(&env, &approval_sign, &&get_account_identifier(to.clone()), &get_congrat_value(&env));
-}
-
-fn thank_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
-    // Validate "to" is a member of the contract
-    if !is_member(&env, &to) {
-        panic!("The user account doesn't belong to the organization");
-    }
-    transfer(&env, &approval_sign, &get_account_identifier(to.clone()), &get_thank_value(&env));
+    transfer(&env, &approval_sign, &get_account_identifier(to.clone()), &get_reward_value(&env));
 }
 
 fn transfer(env: &Env, approval_sign: &Signature, to: &Identifier, amount: &BigInt) {
@@ -232,21 +215,12 @@ fn get_organization_name(env: &Env) -> Symbol {
 }
 
 // REWARDS
-fn set_thank_value(env: &Env, new_value: BigInt) {
-    env.data().set(DataKey::ThankVal, new_value);
+fn set_reward_value(env: &Env, new_value: BigInt) {
+    env.data().set(DataKey::Reward, new_value);
 }
 
-fn get_thank_value(env: &Env) -> BigInt {
-    let key = DataKey::ThankVal;
-    env.data().get(key).unwrap().unwrap()
-}
-
-fn set_congrat_value(env: &Env, new_value: BigInt) {
-    env.data().set(DataKey::CongratVal, new_value);
-}
-
-fn get_congrat_value(env: &Env) -> BigInt {
-    let key = DataKey::CongratVal;
+fn get_reward_value(env: &Env) -> BigInt {
+    let key = DataKey::Reward;
     env.data().get(key).unwrap().unwrap()
 }
 

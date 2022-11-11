@@ -200,7 +200,7 @@ fn test_sign() {
     );
 
     contract_client.add_m(&approval_user);
-    contract_client.thank_m(&xfer_approval_sign, &approval_user);
+    contract_client.reward_m(&xfer_approval_sign, &approval_user);
 
     let token_id = contract_client.get_tc_id();
 
