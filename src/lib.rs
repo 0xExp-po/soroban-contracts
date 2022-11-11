@@ -1,11 +1,8 @@
 #![no_std]
-#![allow(warnings)]
 
-use soroban_sdk::{contractimpl, contracttype, log, symbol, vec, Env, IntoVal, Symbol, Vec, BytesN, AccountId, BigInt, RawVal};
+use soroban_sdk::{contractimpl, contracttype, vec, Env, Symbol, Vec, BytesN, AccountId, BigInt, RawVal};
 
 use soroban_auth::{Identifier, Signature};
-
-use crate::token::{TokenMetadata};
 
 mod token {
     soroban_sdk::contractimport!(file = "./soroban_token_spec.wasm");
@@ -22,92 +19,9 @@ pub enum DataKey {
     AllowedF
 }
 
-pub struct OrganizationContract;
-
-pub trait OrganizationContractTrait {
-    fn initialize(
-        e: Env,
-        admin: Identifier,
-        org_name: Symbol,
-        reward_value: u32,
-        fund_amount: u32,
-        token_c_id:BytesN<32>
-    );
-
-    fn add_m(env: Env, account: AccountId);
-
-    fn remove_m(env: Env, from: AccountId);
-
-    fn reward_m(e: Env, token_approval_sig: Signature, to: AccountId);
-
-    fn get_tc_id(env: Env) -> BytesN<32>;
-
-    fn get_bal(env: Env) -> BigInt;
-    
-    fn get_m(env: Env) -> Vec<AccountId>;
-
-    fn org_name(env: Env) -> Symbol;
-    
-    fn fund_c(env: Env, approval_sign: Signature);
-}
-
-#[contractimpl]
-impl OrganizationContractTrait for OrganizationContract {
-    fn initialize(
-        env: Env, 
-        admin: Identifier,
-        org_name: Symbol,
-        reward_value: u32,
-        fund_amount: u32,
-        token_c_id: BytesN<32>
-    ) {
-        set_admin_id(&env, &admin);
-        
-        set_organization_name(&env, org_name);
-
-        set_allowed_funds_to_issue(&env, BigInt::from_u32(&env, fund_amount));
-
-        set_token_id(&env, &token_c_id);
-
-        set_reward_value(&env, BigInt::from_u32(&env, reward_value));
-    }
-
-    fn add_m(env: Env, account: AccountId) {
-        add_member(&env, account);
-    }
-    
-    fn remove_m(env: Env, from: AccountId) {
-        remove_member(&env, &from);
-    }
-
-    fn reward_m(env: Env, approval_sign: Signature, to: AccountId) {
-        reward_member(&env, &approval_sign, &to);
-    }
-    
-    fn get_tc_id(env: Env) -> BytesN<32> {
-        get_token_contract_id(&env)
-    }
-
-    fn get_bal(env: Env) -> BigInt {
-        get_contract_balance(&env)
-    }
-
-    fn org_name(env: Env) -> Symbol {
-        get_organization_name(&env)
-    }
-
-    fn fund_c(env: Env, approval_sign: Signature) {
-        fund_contract_balance(&env, &approval_sign);
-    }
-
-    fn get_m(env: Env) -> Vec<AccountId> {
-        get_members(&env)
-    }
-}
-
 // VALIDATIONS
 fn is_member(env: &Env, to: &AccountId) -> bool {
-    let mut members: Vec<AccountId> = get_members(&env);
+    let members: Vec<AccountId> = get_members(&env);
 
     members.contains(to)
 } 
@@ -253,6 +167,89 @@ pub fn get_account_identifier(account_id: AccountId) -> Identifier {
 
 pub fn get_contract_identifier(contract_id: BytesN<32>) -> Identifier {
     Identifier::Contract(contract_id)
+}
+
+pub struct OrganizationContract;
+
+pub trait OrganizationContractTrait {
+    fn initialize(
+        e: Env,
+        admin: Identifier,
+        org_name: Symbol,
+        reward_value: u32,
+        fund_amount: u32,
+        token_c_id:BytesN<32>
+    );
+
+    fn add_m(env: Env, account: AccountId);
+
+    fn remove_m(env: Env, from: AccountId);
+
+    fn reward_m(e: Env, token_approval_sig: Signature, to: AccountId);
+
+    fn get_tc_id(env: Env) -> BytesN<32>;
+
+    fn get_bal(env: Env) -> BigInt;
+    
+    fn get_m(env: Env) -> Vec<AccountId>;
+
+    fn org_name(env: Env) -> Symbol;
+    
+    fn fund_c(env: Env, approval_sign: Signature);
+}
+
+#[contractimpl]
+impl OrganizationContractTrait for OrganizationContract {
+    fn initialize(
+        env: Env, 
+        admin: Identifier,
+        org_name: Symbol,
+        reward_value: u32,
+        fund_amount: u32,
+        token_c_id: BytesN<32>
+    ) {
+        set_admin_id(&env, &admin);
+        
+        set_organization_name(&env, org_name);
+
+        set_allowed_funds_to_issue(&env, BigInt::from_u32(&env, fund_amount));
+
+        set_token_id(&env, &token_c_id);
+
+        set_reward_value(&env, BigInt::from_u32(&env, reward_value));
+    }
+
+    fn add_m(env: Env, account: AccountId) {
+        add_member(&env, account);
+    }
+    
+    fn remove_m(env: Env, from: AccountId) {
+        remove_member(&env, &from);
+    }
+
+    fn reward_m(env: Env, approval_sign: Signature, to: AccountId) {
+        reward_member(&env, &approval_sign, &to);
+    }
+    
+    fn get_tc_id(env: Env) -> BytesN<32> {
+        get_token_contract_id(&env)
+    }
+
+    fn get_bal(env: Env) -> BigInt {
+        get_contract_balance(&env)
+    }
+
+    fn org_name(env: Env) -> Symbol {
+        get_organization_name(&env)
+    }
+
+    fn fund_c(env: Env, approval_sign: Signature) {
+        fund_contract_balance(&env, &approval_sign);
+    }
+
+    fn get_m(env: Env) -> Vec<AccountId> {
+        get_members(&env)
+    }
 }
 
 #[cfg(test)]
