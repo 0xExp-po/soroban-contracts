@@ -9,7 +9,7 @@ extern crate std;
 
 use crate::token::{self, TokenMetadata};
 
-fn create_andinit_token_contract(env: &Env, admin_id: &Identifier) -> (BytesN<32>, token::Client) {
+fn create_and_init_token_contract(env: &Env, admin_id: &Identifier) -> (BytesN<32>, token::Client) {
     let token_id = env.register_contract_token(None);
     let token_client = token::Client::new(&env, &token_id);
 
@@ -44,7 +44,7 @@ fn happy_path() {
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
 
     // CREATE TOKEN CONTRACT
-    let (token_id, token_client) = create_andinit_token_contract(&env, &admin_id);
+    let (token_id, token_client) = create_and_init_token_contract(&env, &admin_id);
     
     // Initializate Contract with initial values.
     let reward_amount = 30;
@@ -176,7 +176,7 @@ fn remove_no_member_account() {
     let contract_id = env.register_contract(None, OrganizationContract);
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
 
-    let (token_id, token_client) = create_andinit_token_contract(&env, &admin_id);
+    let (token_id, token_client) = create_and_init_token_contract(&env, &admin_id);
     
     let reward_amount = 300;
     let allowed_funds_to_issue = 1000;
@@ -225,7 +225,7 @@ fn reward_no_member_account() {
     let contract_id = env.register_contract(None, OrganizationContract);
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
 
-    let (token_id, token_client) = create_andinit_token_contract(&env, &admin_id);
+    let (token_id, token_client) = create_and_init_token_contract(&env, &admin_id);
     
     let reward_amount = 300;
     let allowed_funds_to_issue = 1000;
