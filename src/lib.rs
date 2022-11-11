@@ -30,8 +30,9 @@ pub trait OrganizationContractTrait {
         admin: Identifier,
         org_name: Symbol,
         reward_value: u32,
-        fund_amount: u32
-    ) -> BytesN<32>;
+        fund_amount: u32,
+        token_c_id:BytesN<32>
+    );
 
     fn add_m(env: Env, account: AccountId);
 
@@ -47,7 +48,6 @@ pub trait OrganizationContractTrait {
 
     fn org_name(env: Env) -> Symbol;
     
-    // Add the initial balance to the contract
     fn fund_c(env: Env, approval_sign: Signature);
 }
 
@@ -58,30 +58,18 @@ impl OrganizationContractTrait for OrganizationContract {
         admin: Identifier,
         org_name: Symbol,
         reward_value: u32,
-        fund_amount: u32
-    ) -> BytesN<32> {
+        fund_amount: u32,
+        token_c_id: BytesN<32>
+    ) {
         set_admin_id(&env, &admin);
-        let token_id = env.register_contract_token(None);
-        let token_client = token::Client::new(&env, &token_id);
-
-        token_client.init(
-            &admin,
-            &TokenMetadata {
-                name: "Mitkoin".into_val(&env),
-                symbol: "MTK".into_val(&env),
-                decimals: 7,
-            },
-        );
-
+        
         set_organization_name(&env, org_name);
 
         set_allowed_funds_to_issue(&env, BigInt::from_u32(&env, fund_amount));
 
-        set_token_id(&env, &token_id);
+        set_token_id(&env, &token_c_id);
 
         set_reward_value(&env, BigInt::from_u32(&env, reward_value));
-
-        token_id
     }
 
     fn add_m(env: Env, account: AccountId) {

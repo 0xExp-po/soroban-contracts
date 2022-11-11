@@ -2,7 +2,7 @@
 
 use super::{OrganizationContract, OrganizationContractClient, Identifier};
 
-use soroban_sdk::{symbol, vec, Env, testutils::{Accounts, Logger}, BigInt, IntoVal};
+use soroban_sdk::{symbol, vec, Env, testutils::{Accounts, Logger}, BigInt, IntoVal, Bytes};
 use soroban_auth::{Signature, testutils::ed25519};
 
 extern crate std;
@@ -150,21 +150,38 @@ fn test_sign() {
     /// CREATE OUR CUSTOM CONTRACT
     let contract_id = env.register_contract(None, OrganizationContract);
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
+
+    // CREATE TOKEN CONTRACT
+    let token_id = env.register_contract_token(None);
+    let token_client = token::Client::new(&env, &token_id);
+
+    token_client.init(
+        &admin_id,
+        &TokenMetadata {
+            name: "Mitkoin".into_val(&env),
+            symbol: "MTK".into_val(&env),
+            decimals: 7,
+        },
+    );
     
     let reward_amount = 30;
     let allowed_funds_to_issue = 10000;
     let org_name = symbol!("Kommit");
-    contract_client.initialize(&admin_id, &org_name, &reward_amount, &allowed_funds_to_issue);
 
-    let token_contract_id = contract_client.get_tc_id();
-    let token_client = token::Client::new(&env, &token_contract_id);
+    contract_client.initialize(
+        &admin_id, 
+        &org_name, 
+        &reward_amount, 
+        &allowed_funds_to_issue,
+        &token_id
+    );
 
     let nonce = token_client.nonce(&admin_id);
 
     let approval_sign = ed25519::sign(
         &env,
         &admin_sign,
-        &token_contract_id,
+        &token_id,
         symbol!("mint"),
         (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, allowed_funds_to_issue)),
     );
@@ -173,7 +190,7 @@ fn test_sign() {
     let fetched_org_name = contract_client.org_name();
     std::println!("======= [{:?}] CONTRACT START ========:", fetched_org_name);
     std::println!("======= ADMIN BALANCE START ========: {}", balance);
-    std::println!("======= CONTRACT BALANCE - START ========: {}", token_client.balance(&Identifier::Contract(token_contract_id.clone())));
+    std::println!("======= CONTRACT BALANCE - START ========: {}", token_client.balance(&Identifier::Contract(token_id.clone())));
 
     std::println!("===============");
 
@@ -181,7 +198,7 @@ fn test_sign() {
 
     let balance = contract_client.get_bal();
     std::println!("======= ADMIN BALANCE - FUND ========: {}", balance);
-    std::println!("======= CONTRACT BALANCE - FUND ========: {}", token_client.balance(&Identifier::Contract(token_contract_id.clone())));
+    std::println!("======= CONTRACT BALANCE - FUND ========: {}", token_client.balance(&Identifier::Contract(token_id.clone())));
     std::println!("===============");
 
     let nonce = token_client.nonce(&admin_id);
@@ -192,7 +209,7 @@ fn test_sign() {
         // Signer has the private key of the admin.
         &admin_sign,
         // Identifier of the token contract.
-        &token_contract_id,
+        &token_id,
         // Name of the contract function we call.
         symbol!("xfer"),
         // Arguments of the contract function call.
