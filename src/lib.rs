@@ -89,7 +89,7 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
 
 fn reward_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
     if !is_member(&env, &to) {
-        panic!("The user account doesn't belong to the organization");
+        panic!("The user account you're trying to reward doesn't belong to the organization");
     }
     transfer(&env, &approval_sign, &get_account_identifier(to.clone()), &get_reward_value(&env));
 }
