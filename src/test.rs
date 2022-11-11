@@ -2,7 +2,7 @@
 
 use super::{OrganizationContract, OrganizationContractClient, Identifier};
 
-use soroban_sdk::{symbol, Env, testutils::{Accounts}, BigInt, IntoVal};
+use soroban_sdk::{symbol, Env, testutils::{Accounts}, BigInt, IntoVal, BytesN};
 use soroban_auth::{Signature, testutils::ed25519};
 
 extern crate std;
@@ -132,6 +132,22 @@ use crate::token::{self, TokenMetadata};
     
 // }
 
+fn create_andinit_token_contract(env: &Env, admin_id: &Identifier) -> (BytesN<32>, token::Client) {
+    let token_id = env.register_contract_token(None);
+    let token_client = token::Client::new(&env, &token_id);
+
+    token_client.init(
+        &admin_id,
+        &TokenMetadata {
+            name: "Mmitkoin".into_val(&env),
+            symbol: "MTK".into_val(&env),
+            decimals: 7,
+        },
+    );
+
+    (token_id, token_client)
+}
+
 #[test]
 fn happy_path() {
     let env = Env::default();
@@ -151,17 +167,7 @@ fn happy_path() {
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
 
     // CREATE TOKEN CONTRACT
-    let token_id = env.register_contract_token(None);
-    let token_client = token::Client::new(&env, &token_id);
-
-    token_client.init(
-        &admin_id,
-        &TokenMetadata {
-            name: "Mmitkoin".into_val(&env),
-            symbol: "MTK".into_val(&env),
-            decimals: 7,
-        },
-    );
+    let (token_id, token_client) = create_andinit_token_contract(&env, &admin_id);
     
     // Initializate Contract with initial values.
     let reward_amount = 30;
@@ -193,9 +199,10 @@ fn happy_path() {
     let balance = contract_client.get_bal();
 
     let fetched_org_name = contract_client.org_name();
+    std::println!("=======================================================");
     std::println!("======= [{:?}] CONTRACT START ========:", fetched_org_name);
     std::println!("======= ADMIN BALANCE START ========: {}", balance);
-    std::println!("===============");
+    std::println!("=======================================================\n\n");
 
     contract_client.fund_c(&approval_sign);
 
@@ -206,8 +213,9 @@ fn happy_path() {
     );
 
     let balance = contract_client.get_bal();
+    std::println!("=======================================================");
     std::println!("======= ADMIN BALANCE - AFTER FUND ========: {}", balance);
-    std::println!("===============");
+    std::println!("=======================================================\n\n");
 
     let nonce = token_client.nonce(&admin_id);
     let xfer_approval_sign = ed25519::sign(
@@ -234,9 +242,10 @@ fn happy_path() {
         "Correct balance found on rewarded account"
     );
 
-    std::println!("======= ADMIN BALANCE - AFTER XFER ========: {}", token_client.balance(&admin_id));
-    std::println!("======= APPROBAL USER BALANCE - AFTER XFER ========: {}", token_client.balance(&approval_user_id));
-    std::println!("===============");
+    std::println!("=======================================================");
+    std::println!("======= ADMIN BALANCE - AFTER REWARD ========: {}", token_client.balance(&admin_id));
+    std::println!("======= APPROBAL USER BALANCE - AFTER REWARD ========: {}", token_client.balance(&approval_user_id));
+    std::println!("=======================================================\n\n");
 
     contract_client.add_m(&doe_user);
 
@@ -275,16 +284,100 @@ fn happy_path() {
 
     std::println!("======= ADMIN BALANCE - AFTER REMOVE ========: {}", token_client.balance(&admin_id));
     std::println!("======= APPROBAL USER BALANCE - AFTER REMOVE ========: {}", token_client.balance(&approval_user_id));
-    
     std::println!("======= CONTRACT MEMBERS ========: {:?}", contract_client.get_m());
 }
 
 #[test]
-fn remove_no_member_account() {T
+#[should_panic(expected = "The user account you're trying to reward doesn't belong to the organization")]
+fn remove_no_member_account() {
+    let env = Env::default();
 
+    let (admin_id, admin_sign) = ed25519::generate(&env);
+
+    let doe_user = env.accounts().generate();
+    
+    let contract_id = env.register_contract(None, OrganizationContract);
+    let contract_client = OrganizationContractClient::new(&env, &contract_id);
+
+    let (token_id, token_client) = create_andinit_token_contract(&env, &admin_id);
+    
+    let reward_amount = 300;
+    let allowed_funds_to_issue = 1000;
+    let org_name = symbol!("Kommit");
+
+    contract_client.initialize(
+        &admin_id, 
+        &org_name, 
+        &reward_amount, 
+        &allowed_funds_to_issue,
+        &token_id
+    );
+
+    let nonce = token_client.nonce(&admin_id);
+    let approval_sign = ed25519::sign(
+        &env,
+        &admin_sign,
+        &token_id,
+        symbol!("mint"),
+        (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, allowed_funds_to_issue)),
+    );
+
+    contract_client.fund_c(&approval_sign);
+
+    let xfer_approval_sign = ed25519::sign(
+        &env,
+        &admin_sign,
+        &token_id,
+        symbol!("xfer"),
+        (&admin_id, &nonce, &doe_user, &BigInt::from_u32(&env, reward_amount)),
+    );
+
+    contract_client.reward_m(&xfer_approval_sign, &doe_user);
 }
 
 #[test]
+#[should_panic(expected = "You are trying to remove an account that doesn't belong to your organization")]
 fn reward_no_member_account() {
+     let env = Env::default();
+
+    let (admin_id, admin_sign) = ed25519::generate(&env);
+
+    let doe_user = env.accounts().generate();
+    let doe_user_id = Identifier::Account(doe_user.clone());
     
+    let contract_id = env.register_contract(None, OrganizationContract);
+    let contract_client = OrganizationContractClient::new(&env, &contract_id);
+
+    let (token_id, token_client) = create_andinit_token_contract(&env, &admin_id);
+    
+    let reward_amount = 300;
+    let allowed_funds_to_issue = 1000;
+    let org_name = symbol!("Kommit");
+
+    contract_client.initialize(
+        &admin_id, 
+        &org_name, 
+        &reward_amount, 
+        &allowed_funds_to_issue,
+        &token_id
+    );
+
+    let nonce = token_client.nonce(&admin_id);
+    let approval_sign = ed25519::sign(
+        &env,
+        &admin_sign,
+        &token_id,
+        symbol!("mint"),
+        (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, allowed_funds_to_issue)),
+    );
+
+    contract_client.fund_c(&approval_sign);
+    token_client.with_source_account(&doe_user).approve(
+        &Signature::Invoker,
+        &BigInt::zero(&env),
+        &Identifier::Contract(contract_id),
+        &token_client.balance(&doe_user_id)
+    );
+
+    contract_client.remove_m(&doe_user);
 }
