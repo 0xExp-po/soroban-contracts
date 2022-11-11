@@ -123,7 +123,6 @@ fn add_member(env: &Env, account: AccountId) {
 }
 
 fn remove_member(env: &Env, from: &AccountId) {
-    // Remove member from the members vector
     let mut members: Vec<AccountId> = get_members(&env);
     
     let index;
@@ -175,7 +174,6 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
 }
 
 fn reward_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
-    // Validate "to" is a member of the contract
     if !is_member(&env, &to) {
         panic!("The user account doesn't belong to the organization");
     }
