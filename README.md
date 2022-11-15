@@ -2,9 +2,9 @@
 Organization smart contract implementation in Rust for Soroban (Stellar's Smart Contract)
 
 Provides to any organization the ability of:
-- Add members to it
-- Reward members based on specific rules of the organization
-- Remove members from it
+- Add/Remove members to it
+- Reward members based on organization-specific rules
+- Define custom reward types, with different amounts associated with them.
 - Get the funds back from a removed member
 
 ## Setup

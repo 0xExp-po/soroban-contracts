@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contractimpl, contracttype, vec, Env, Symbol, Vec, BytesN, AccountId, BigInt, RawVal};
+use soroban_sdk::{contractimpl, contracttype, vec, Env, Symbol, Vec, BytesN, AccountId, BigInt, RawVal, Map};
 
 use soroban_auth::{Identifier, Signature};
 
@@ -14,7 +14,7 @@ pub enum DataKey {
     OrgName,
     TokenId,
     AdminId,
-    Reward,
+    Rewards,
     Members,
     AllowedF
 }
@@ -87,11 +87,17 @@ fn fund_contract_balance(env: &Env, approval_sign: &Signature) {
     token_client.mint(&approval_sign, &nonce, &admin_id, &get_allowed_funds_to_issue(&env));
 }
 
-fn reward_member(env: &Env, approval_sign: &Signature, to: &AccountId) {
+fn reward_member(env: &Env, approval_sign: &Signature, to: &AccountId, reward_type: &Symbol) {
     if !is_member(&env, &to) {
         panic!("The user account you're trying to reward doesn't belong to the organization");
     }
-    transfer(&env, &approval_sign, &get_account_identifier(to.clone()), &get_reward_value(&env));
+
+    if !is_reward_valid(&env, &reward_type) {
+        panic!("The reward type you are trying to use isn't supported")
+    }
+
+    let reward_value = get_reward_by_type(&env, &reward_type);
+    transfer(&env, &approval_sign, &get_account_identifier(to.clone()), &BigInt::from_u32(&env, reward_value));
 }
 
 fn transfer(env: &Env, approval_sign: &Signature, to: &Identifier, amount: &BigInt) {
@@ -131,13 +137,26 @@ fn get_allowed_funds_to_issue(env: &Env) -> BigInt {
 }
 
 // REWARDS
-fn set_reward_value(env: &Env, new_value: BigInt) {
-    env.data().set(DataKey::Reward, new_value);
+fn is_reward_valid(env: &Env, key: &Symbol) -> bool {
+    let rewards = get_rewards(&env);
+
+    rewards.contains_key(key.clone())
 }
 
-fn get_reward_value(env: &Env) -> BigInt {
-    let key = DataKey::Reward;
+fn set_rewards(env: &Env, reward_types: &Map<Symbol, u32>) {
+    env.data().set(DataKey::Rewards, reward_types);
+}
+
+fn get_rewards(env: &Env) -> Map<Symbol, u32> {
+    let key = DataKey::Rewards;
     env.data().get(key).unwrap().unwrap()
+}
+
+fn get_reward_by_type(env: &Env, r_type: &Symbol) -> u32 {
+    let key = DataKey::Rewards;
+    let rewards: Map<Symbol, u32> = env.data().get(key).unwrap().unwrap();
+
+    rewards.get(r_type.clone()).unwrap().unwrap()
 }
 
 // ADMIN
@@ -176,7 +195,7 @@ pub trait OrganizationContractTrait {
         e: Env,
         admin: Identifier,
         org_name: Symbol,
-        reward_value: u32,
+        rewards: Map<Symbol, u32>,
         fund_amount: u32,
         token_c_id:BytesN<32>
     );
@@ -185,7 +204,7 @@ pub trait OrganizationContractTrait {
 
     fn remove_m(env: Env, from: AccountId);
 
-    fn reward_m(e: Env, token_approval_sig: Signature, to: AccountId);
+    fn reward_m(e: Env, token_approval_sig: Signature, to: AccountId, r_type: Symbol);
 
     fn get_tc_id(env: Env) -> BytesN<32>;
 
@@ -204,7 +223,7 @@ impl OrganizationContractTrait for OrganizationContract {
         env: Env, 
         admin: Identifier,
         org_name: Symbol,
-        reward_value: u32,
+        rewards: Map<Symbol, u32>,
         fund_amount: u32,
         token_c_id: BytesN<32>
     ) {
@@ -216,7 +235,7 @@ impl OrganizationContractTrait for OrganizationContract {
 
         set_token_id(&env, &token_c_id);
 
-        set_reward_value(&env, BigInt::from_u32(&env, reward_value));
+        set_rewards(&env, &rewards);
     }
 
     fn add_m(env: Env, account: AccountId) {
@@ -227,8 +246,8 @@ impl OrganizationContractTrait for OrganizationContract {
         remove_member(&env, &from);
     }
 
-    fn reward_m(env: Env, approval_sign: Signature, to: AccountId) {
-        reward_member(&env, &approval_sign, &to);
+    fn reward_m(env: Env, approval_sign: Signature, to: AccountId, r_type: Symbol) {
+        reward_member(&env, &approval_sign, &to, &r_type);
     }
     
     fn get_tc_id(env: Env) -> BytesN<32> {

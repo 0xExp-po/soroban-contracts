@@ -2,7 +2,7 @@
 
 use super::{OrganizationContract, OrganizationContractClient, Identifier};
 
-use soroban_sdk::{symbol, Env, testutils::{Accounts}, BigInt, IntoVal, BytesN};
+use soroban_sdk::{symbol, Env, testutils::{Accounts}, BigInt, IntoVal, BytesN, Map, Symbol};
 use soroban_auth::{Signature, testutils::ed25519};
 
 extern crate std;
@@ -50,11 +50,15 @@ fn happy_path() {
     let reward_amount = 30;
     let allowed_funds_to_issue = 10000;
     let org_name = symbol!("Kommit");
+    let items = [(symbol!("thank"), 30), (symbol!("congrat"), 25)];
+    let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
+
+    std::println!("REWARDS {:?}", rewards.get(symbol!("thank")));
 
     contract_client.initialize(
         &admin_id, 
         &org_name, 
-        &reward_amount, 
+        &rewards,
         &allowed_funds_to_issue,
         &token_id
     );
@@ -111,7 +115,7 @@ fn happy_path() {
         "Member was successfully removed"
     );
 
-    contract_client.reward_m(&xfer_approval_sign, &member);
+    contract_client.reward_m(&xfer_approval_sign, &member, &symbol!("thank"));
 
     assert_eq!(
         token_client.balance(&member_id),
@@ -181,11 +185,13 @@ fn remove_no_member_account() {
     let reward_amount = 300;
     let allowed_funds_to_issue = 1000;
     let org_name = symbol!("Kommit");
+    let items = [(symbol!("thank"), 35), (symbol!("congrat"), 25)];
+    let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
 
     contract_client.initialize(
         &admin_id, 
         &org_name, 
-        &reward_amount, 
+        &rewards,
         &allowed_funds_to_issue,
         &token_id
     );
@@ -209,32 +215,33 @@ fn remove_no_member_account() {
         (&admin_id, &nonce, &doe_user, &BigInt::from_u32(&env, reward_amount)),
     );
 
-    contract_client.reward_m(&xfer_approval_sign, &doe_user);
+    contract_client.reward_m(&xfer_approval_sign, &doe_user, &symbol!("congrat"));
 }
 
 #[test]
 #[should_panic(expected = "You are trying to remove an account that doesn't belong to your organization")]
 fn reward_no_member_account() {
-     let env = Env::default();
+    let env = Env::default();
 
     let (admin_id, admin_sign) = ed25519::generate(&env);
 
     let doe_user = env.accounts().generate();
     let doe_user_id = Identifier::Account(doe_user.clone());
-    
+
     let contract_id = env.register_contract(None, OrganizationContract);
     let contract_client = OrganizationContractClient::new(&env, &contract_id);
 
     let (token_id, token_client) = create_and_init_token_contract(&env, &admin_id);
-    
-    let reward_amount = 300;
+
     let allowed_funds_to_issue = 1000;
     let org_name = symbol!("Kommit");
+    let items = [(symbol!("thank"), 35), (symbol!("congrat"), 25)];
+    let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
 
     contract_client.initialize(
-        &admin_id, 
-        &org_name, 
-        &reward_amount, 
+        &admin_id,
+        &org_name,
+        &rewards,
         &allowed_funds_to_issue,
         &token_id
     );
@@ -257,4 +264,55 @@ fn reward_no_member_account() {
     );
 
     contract_client.remove_m(&doe_user);
+}
+
+#[test]
+#[should_panic(expected = "The reward type you are trying to use isn't supported")]
+fn reward_with_invalid_type() {
+    let env = Env::default();
+
+    let (admin_id, admin_sign) = ed25519::generate(&env);
+
+    let doe_user = env.accounts().generate();
+
+    let contract_id = env.register_contract(None, OrganizationContract);
+    let contract_client = OrganizationContractClient::new(&env, &contract_id);
+
+    let (token_id, token_client) = create_and_init_token_contract(&env, &admin_id);
+
+    let reward_amount = 300;
+    let allowed_funds_to_issue = 1000;
+    let org_name = symbol!("Kommit");
+    let items = [(symbol!("thank"), 35), (symbol!("congrat"), 25)];
+    let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
+
+    contract_client.initialize(
+        &admin_id,
+        &org_name,
+        &rewards,
+        &allowed_funds_to_issue,
+        &token_id
+    );
+
+    let nonce = token_client.nonce(&admin_id);
+    let approval_sign = ed25519::sign(
+        &env,
+        &admin_sign,
+        &token_id,
+        symbol!("mint"),
+        (&admin_id, &nonce, &admin_id, &BigInt::from_u32(&env, allowed_funds_to_issue)),
+    );
+
+    contract_client.fund_c(&approval_sign);
+    contract_client.add_m(&doe_user);
+
+    let xfer_approval_sign = ed25519::sign(
+        &env,
+        &admin_sign,
+        &token_id,
+        symbol!("xfer"),
+        (&admin_id, &nonce, &doe_user, &BigInt::from_u32(&env, reward_amount)),
+    );
+
+    contract_client.reward_m(&xfer_approval_sign, &doe_user, &symbol!("contribut"));
 }
