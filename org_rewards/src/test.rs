@@ -50,10 +50,8 @@ fn happy_path() {
     let reward_amount = 30;
     let allowed_funds_to_issue = 10000;
     let org_name = symbol!("Kommit");
-    let items = [(symbol!("thank"), 30), (symbol!("congrat"), 25)];
+    let items = [(symbol!("talk"), 30), (symbol!("blog_post"), 25)];
     let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
-
-    std::println!("REWARDS {:?}", rewards.get(symbol!("thank")));
 
     contract_client.initialize(
         &admin_id, 
@@ -115,7 +113,7 @@ fn happy_path() {
         "Member was successfully removed"
     );
 
-    contract_client.reward_m(&xfer_approval_sign, &member, &symbol!("thank"));
+    contract_client.reward_m(&xfer_approval_sign, &member, &symbol!("talk"));
 
     assert_eq!(
         token_client.balance(&member_id),
@@ -185,7 +183,7 @@ fn remove_no_member_account() {
     let reward_amount = 300;
     let allowed_funds_to_issue = 1000;
     let org_name = symbol!("Kommit");
-    let items = [(symbol!("thank"), 35), (symbol!("congrat"), 25)];
+    let items = [(symbol!("talk"), 35), (symbol!("blog_post"), 25)];
     let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
 
     contract_client.initialize(
@@ -215,7 +213,7 @@ fn remove_no_member_account() {
         (&admin_id, &nonce, &doe_user, &BigInt::from_u32(&env, reward_amount)),
     );
 
-    contract_client.reward_m(&xfer_approval_sign, &doe_user, &symbol!("congrat"));
+    contract_client.reward_m(&xfer_approval_sign, &doe_user, &symbol!("blog_post"));
 }
 
 #[test]
@@ -235,7 +233,7 @@ fn reward_no_member_account() {
 
     let allowed_funds_to_issue = 1000;
     let org_name = symbol!("Kommit");
-    let items = [(symbol!("thank"), 35), (symbol!("congrat"), 25)];
+    let items = [(symbol!("talk"), 35), (symbol!("blog_post"), 25)];
     let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
 
     contract_client.initialize(
@@ -283,7 +281,7 @@ fn reward_with_invalid_type() {
     let reward_amount = 300;
     let allowed_funds_to_issue = 1000;
     let org_name = symbol!("Kommit");
-    let items = [(symbol!("thank"), 35), (symbol!("congrat"), 25)];
+    let items = [(symbol!("talk"), 35), (symbol!("blog_post"), 25)];
     let rewards: Map<Symbol, u32> = Map::from_array(&env, items);
 
     contract_client.initialize(
@@ -314,5 +312,5 @@ fn reward_with_invalid_type() {
         (&admin_id, &nonce, &doe_user, &BigInt::from_u32(&env, reward_amount)),
     );
 
-    contract_client.reward_m(&xfer_approval_sign, &doe_user, &symbol!("contribut"));
+    contract_client.reward_m(&xfer_approval_sign, &doe_user, &symbol!("oss_contri"));
 }
