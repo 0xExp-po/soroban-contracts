@@ -36,7 +36,7 @@ fn add_member(env: &Env, account: AccountId) {
     env.data().set(key, members);
 }
 
-fn remove_member(env: &Env, from: &AccountId) {
+fn revoke_membership(env: &Env, from: &AccountId) {
     let mut members: Vec<AccountId> = get_members(&env);
     
     let index;
@@ -202,7 +202,7 @@ pub trait OrganizationContractTrait {
 
     fn add_m(env: Env, account: AccountId);
 
-    fn remove_m(env: Env, from: AccountId);
+    fn revoke_m(env: Env, from: AccountId);
 
     fn reward_m(e: Env, token_approval_sig: Signature, to: AccountId, r_type: Symbol);
 
@@ -242,8 +242,8 @@ impl OrganizationContractTrait for OrganizationContract {
         add_member(&env, account);
     }
     
-    fn remove_m(env: Env, from: AccountId) {
-        remove_member(&env, &from);
+    fn revoke_m(env: Env, from: AccountId) {
+        revoke_membership(&env, &from);
     }
 
     fn reward_m(env: Env, approval_sign: Signature, to: AccountId, r_type: Symbol) {

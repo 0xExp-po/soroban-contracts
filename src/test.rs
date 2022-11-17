@@ -141,7 +141,7 @@ fn happy_path() {
 
     std::println!("======= APPROBAL USER BALANCE - AFTER APPROVE ========: {}", token_client.balance(&member_id));
 
-    contract_client.remove_m(&member);
+    contract_client.revoke_m(&member);
 
     // Member was correctly removed from organization
     assert!(
@@ -263,7 +263,7 @@ fn reward_no_member_account() {
         &token_client.balance(&doe_user_id)
     );
 
-    contract_client.remove_m(&doe_user);
+    contract_client.revoke_m(&doe_user);
 }
 
 #[test]
