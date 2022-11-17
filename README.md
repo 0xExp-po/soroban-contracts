@@ -1,12 +1,11 @@
 # Soroban smart contracts
 Code examples for **[Soroban][soroban]** smart contracts.
 
---
-<br/>
+## Available examples
 
-**[Organization's rewards contract][sc-rewards]  -  [[code]][sc-rewards][[docs]][sc-rewards]**
-<br>
-A smart contract to reward members of an organization who perform meaningful tasks.
+> **[Organization's rewards contract][sc-rewards]  -  [Docs][sc-gitbook]**
+> 
+> A smart contract to reward members of an organization who perform meaningful tasks.
 
 <br/>
 
@@ -37,5 +36,6 @@ Made with 💙 by [kommitters Open Source](https://kommit.co)
 [soroban]: https://soroban.stellar.org/
 [coc]: https://github.com/kommitters/soroban_smart_contracts/blob/main/CODE_OF_CONDUCT.md
 [sc-rewards]: https://github.com/kommitters/soroban_smart_contracts/blob/main/org_rewards/
+[sc-gitbook]: https://kommitters.gitbook.io/soroban-examples/
 [contributing]: https://github.com/kommitters/soroban_smart_contracts/blob/main/CONTRIBUTING.md
 [license]: https://github.com/kommitters/soroban_smart_contracts/blob/main/LICENSEA
