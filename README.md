@@ -9,6 +9,12 @@ Code examples for **[Soroban][soroban]** smart contracts.
 
 <br/>
 
+> **[Cascade donations contract][cd-contract]  -  [Docs][cd-gitbook]**
+> 
+> A smart contract to distribute funds assisting beneficiaries too.
+
+<br/>
+
 ## Code of conduct
 
 We welcome everyone to contribute. Make sure you have read the [CODE_OF_CONDUCT][coc] before.
@@ -36,6 +42,8 @@ Made with 💙 by [kommitters Open Source](https://kommit.co)
 [soroban]: https://soroban.stellar.org/
 [coc]: https://github.com/kommitters/soroban_smart_contracts/blob/main/CODE_OF_CONDUCT.md
 [sc-rewards]: https://github.com/kommitters/soroban_smart_contracts/blob/main/org_rewards/
-[sc-gitbook]: https://kommitters.gitbook.io/soroban-examples/
+[sc-gitbook]: https://kommitters.gitbook.io/soroban-examples/org_rewards
+[cd-contract]: https://github.com/kommitters/soroban_smart_contracts/blob/main/cascading_donations/
+[cd-gitbook]: https://kommitters.gitbook.io/soroban-examples/cascade_donations_contract
 [contributing]: https://github.com/kommitters/soroban_smart_contracts/blob/main/CONTRIBUTING.md
 [license]: https://github.com/kommitters/soroban_smart_contracts/blob/main/LICENSEA
