@@ -89,7 +89,7 @@ fn basic_donation_without_cascade() {
 
     contract_client.initialize(&token_id, &children);
 
-    // FUND DONATOR ACCOUNT
+    // FUND DONOR ACCOUNT
     token_client.with_source_account(&admin).mint(
         &Signature::Invoker,
         &BigInt::zero(&env),
@@ -239,7 +239,7 @@ fn contract_with_parent_children() {
     contract_client.initialize(&token_id, &children);
     std::println!("======= MAIN CONTRACT CHILDREN ========: {:?}", contract_client.g_children());
 
-    // FUND DONATOR ACCOUNT
+    // FUND DONOR ACCOUNT
     token_client.with_source_account(&admin).mint(
         &Signature::Invoker,
         &BigInt::zero(&env),
@@ -295,3 +295,112 @@ fn contract_with_parent_children() {
         "Sub Dependency 2 receives the correct balance"
     );
 }
+
+#[test]
+#[should_panic(expected = "Circular cascading aren't allowed, verify the children from")]
+fn contract_with_parent_children_and_circular_schema() {
+    /*
+    [EXAMPLE]
+    MAIN PROJECT
+    |-   dependency_1
+    |-   dependency_2
+    |--     sub_dependency_1
+    |--     sub_dependency_2
+
+    Expected workflow
+    1. Donate 1000 to MAIN PROJECT
+    2. The MAIN PROJECT receives the donation
+    3. Auto donate to dependency_1 with a xfer
+    4. Auto donate to dependency_2 with a donation invocation (Should be a contract since is a child with sub childs)
+    5. The dependency_2 receives the donation
+    6. Auto donate to sub_dependency_1 fails because it points to a parent recipient.
+*/
+
+let env = Env::default();
+
+// USERS
+let admin = env.accounts().generate();
+let admin_id = Identifier::Account(admin.clone());
+
+let donor = env.accounts().generate();
+let donor_id = Identifier::Account(donor.clone());
+
+// PARENT CONTRACT (PARENT PROJECT)
+let contract_id = env.register_contract(None, CascadingDonationContract);
+let contract_client = CascadingDonationContractClient::new(&env, &contract_id);
+
+// PARENT PROJECT CHILDREN ACCOUNTS
+let dependency_1 = env.accounts().generate();
+
+// PARENT CHILD CONTRACT (CHILD CONTRACT)
+let child_contract_id = env.register_contract(None, CascadingDonationContract);
+let child_contract_client = CascadingDonationContractClient::new(&env, &child_contract_id);
+
+// SUB PROJECT 2 CHILDREN
+let sub_dependency_2 = env.accounts().generate();
+
+// CREATE TOKEN CONTRACT
+let (token_id, token_client) = create_and_init_token_contract(&env, &admin_id);
+
+// CHILD PARENT CHILDREN
+let mut parent1_children: Vec<Recipient> = vec![&env];
+let parent_1_child_1 =
+    Recipient {
+        dest: soroban_sdk::Address::Contract(child_contract_id.clone()), // Here one of the child recipients pints to the main one (main contract).
+        name: symbol!("subdep_1"),
+        percentage: 20
+    };
+
+let parent_1_child_2 =
+    Recipient {
+        dest: soroban_sdk::Address::Account(sub_dependency_2.clone()),
+        name: symbol!("subdep_2"),
+        percentage: 20
+    };
+
+parent1_children.push_back(parent_1_child_1);
+parent1_children.push_back(parent_1_child_2);
+// END CHILD PARENT CHILDREN
+
+child_contract_client.initialize(&token_id, &parent1_children);
+
+//PARENT CHILDREN
+let child_parent_1 =
+    Recipient {
+        dest: soroban_sdk::Address::Contract(child_contract_id.clone()),
+        name: symbol!("c_parent_1"),
+        percentage: 20
+    };
+
+let child_1 =
+    Recipient {
+        dest: soroban_sdk::Address::Account(dependency_1.clone()),
+        name: symbol!("dep_1"),
+        percentage: 20
+    };
+// END CHILDREN
+
+let mut children: Vec<Recipient> = vec![&env];
+children.push_back(child_1);
+children.push_back(child_parent_1);
+
+contract_client.initialize(&token_id, &children);
+
+// FUND DONOR ACCOUNT
+token_client.with_source_account(&admin).mint(
+    &Signature::Invoker,
+    &BigInt::zero(&env),
+    &donor_id,
+    &BigInt::from_u32(&env, 2000)
+);
+
+token_client.with_source_account(&donor).approve(
+    &Signature::Invoker,
+    &BigInt::zero(&env),
+    &Identifier::Contract(contract_id.clone()),
+    &BigInt::from_u32(&env, 1000)
+);
+
+contract_client.with_source_account(&donor).donate(&BigInt::from_u32(&env, 1000), &donor_id);
+}
+
